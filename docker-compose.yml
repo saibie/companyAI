@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # All-in-One Database (RDB + Vector)
+  postgres:
+    image: pgvector/pgvector:pg16  # pgvector가 기본 설치된 이미지 사용
+    container_name: ai_corp_db
+    environment:
+      POSTGRES_USER: ai_ceo
+      POSTGRES_PASSWORD: local_secure_password
+      POSTGRES_DB: ai_corp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ai_corp_network
+    restart: always
+
+  # (선택) DB 관리 툴 - pgAdmin
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ai_corp_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aicorp.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    networks:
+      - ai_corp_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+
+networks:
+  ai_corp_network:
+    driver: bridge
