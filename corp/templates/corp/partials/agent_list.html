@@ -1,0 +1,7 @@
+<ul>
+    {% for agent in agents %}
+        <li><a href="{% url 'corp:agent_detail' pk=agent.id %}">{{ agent.name }}</a> ({{ agent.role }}) - {% if agent.manager %}(Manager: {{ agent.manager.name }}){% else %}CEO{% endif %}</li>
+    {% empty %}
+        <li>No agents found.</li>
+    {% endfor %}
+</ul>

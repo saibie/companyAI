@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Corp Dashboard</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .container { display: flex; gap: 20px; }
+        .panel { border: 1px solid #ccc; padding: 15px; border-radius: 8px; flex: 1; }
+        h2 { color: #333; }
+        ul { list-style: none; padding: 0; }
+        li { background: #f9f9f9; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
+        .status-bar { background: #e0e0e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-around; }
+        .status-item { font-weight: bold; }
+        form { margin-top: 15px; }
+        form input, form select, form textarea { width: 100%; margin-bottom: 10px; padding: 8px; box-sizing: border-box; }
+        form button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>AI Corp Management Dashboard</h1>
+
+    <div class="status-bar">
+        <div class="status-item">Ollama Status: {{ ollama_status }}</div>
+        <div class="status-item">Agent Queue: {{ agent_queue_status }}</div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Agents</h2>
+            <div id="agent-list">
+                {% include 'corp/partials/agent_list.html' %}
+            </div>
+            
+            <form hx-post="{% url 'corp:dashboard' %}" hx-target="#agent-list" hx-swap="outerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_agent">
+                <h3>Create New Agent</h3>
+                <input type="text" name="name" placeholder="Agent Name" required>
+                <input type="text" name="role" placeholder="Agent Role" required>
+                <select name="manager">
+                    <option value="">-- No Manager (Reports to CEO) --</option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}">{{ agent.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Create Agent</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Tasks Waiting Approval</h2>
+            <div id="task-list-container">
+                {% include 'corp/partials/task_list.html' %}
+            </div>
+
+            <form hx-post="{% url 'corp:dashboard' %}" hx-target="#task-list-container" hx-swap="outerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_task">
+                <h3>Create New Task</h3>
+                <input type="text" name="title" placeholder="Task Title" required>
+                <textarea name="description" placeholder="Task Description" required></textarea>
+                <select name="assignee" required>
+                    <option value="">-- Assign to Agent --</option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}">{{ agent.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Create Task</button>
+            </form>
+            <div id="task-creation-status"></div>
+        </div>
+        
+        <div class="panel">
+            <h2>Ollama Models</h2>
+            <ul>
+                {% for model in ollama_models %}
+                    <li>{{ model.name }}</li>
+                {% empty %}
+                    <li>No models found or Ollama is offline.</li>
+                {% endfor %}
+            </ul>
+            
+            <form hx-post="{% url 'corp:dashboard' %}" hx-target="#ollama-pull-status" hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="ollama_pull_model">
+                <h3>Pull Ollama Model</h3>
+                <input type="text" name="model_name" placeholder="e.g., llama3.1" required>
+                <button type="submit">Pull Model</button>
+            </form>
+            <div id="ollama-pull-status"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+</body>
+</html>
