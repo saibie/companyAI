@@ -1,5 +1,5 @@
 from typing import TypedDict, List, Annotated
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 from langchain_core.tools import tool
 from corp.ollama_client import OllamaClient
@@ -49,7 +49,7 @@ class AgentNodes:
         except Exception as e:
             plan = f"Error generating plan: {e}"
 
-        return {"plan": plan, "chat_history": [HumanMessage(content=f"Generate plan for: {task_description}"), BaseMessage(content=plan)]}
+        return {"plan": plan, "chat_history": [HumanMessage(content=f"Generate plan for: {task_description}"), AIMessage(content=plan)]}
 
     def revise_plan(self, state: AgentState) -> AgentState:
         print("---REVISE PLAN NODE---")
@@ -67,7 +67,7 @@ class AgentNodes:
         except Exception as e:
             plan = f"Error revising plan: {e}"
 
-        return {"plan": plan, "chat_history": [HumanMessage(content=f"Revise plan based on feedback: {feedback}"), BaseMessage(content=plan)]}
+        return {"plan": plan, "chat_history": [HumanMessage(content=f"Revise plan based on feedback: {feedback}"), AIMessage(content=plan)]}
 
 
     def use_tools(self, state: AgentState) -> AgentState:
@@ -87,7 +87,7 @@ class AgentNodes:
             tool_outputs.append(f"Code Execution Output: {tool_output}")
             
         new_scratchpad = scratchpad + "\n" + "\n".join(tool_outputs) if tool_outputs else scratchpad
-        return {"scratchpad": new_scratchpad, "chat_history": [BaseMessage(content=f"Used tools: {tool_outputs}")]}
+        return {"scratchpad": new_scratchpad, "chat_history": [AIMessage(content=f"Used tools: {tool_outputs}")]}
 
     def reflect_and_respond(self, state: AgentState) -> AgentState:
         print("---REFLECT AND RESPOND NODE---")
@@ -109,7 +109,7 @@ class AgentNodes:
         except Exception as e:
             final_response = f"Error reflecting and responding: {e}"
         
-        return {"ollama_response": final_response, "chat_history": [HumanMessage(content="Final Reflection"), BaseMessage(content=final_response)]}
+        return {"ollama_response": final_response, "chat_history": [HumanMessage(content="Final Reflection"), AIMessage(content=final_response)]}
 
 def should_continue(state: AgentState) -> str:
     print("---DECISION NODE: SHOULD CONTINUE?---")
