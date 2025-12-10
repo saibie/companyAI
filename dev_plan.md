@@ -26,6 +26,7 @@
     * **[Update] 리소스 제한 (Hardware Constraints):**
         * API 비용 제한 대신 **동시 실행 에이전트 수(Concurrency)** 제한.
         * 로컬 GPU VRAM 한계를 고려하여, 한 번에 추론(Inference) 가능한 에이전트 큐(Queue) 관리.
+    * **[New] 하위 에이전트 생성 함수:** `create_sub_agent(name, role, ollama_model_name=None, context_window_size=None)` 메서드를 통해 하위 에이전트를 생성 가능. 매개변수는 `Name`, `Role`, 선택적 `Ollama Model`, `Context Window Size`로 구성.
 
 ### 3.2. 업무 보고 체계 (Hierarchical Reporting System)
 * **상향식 보고 및 보정 (Bottom-up with Correction):**
@@ -64,6 +65,7 @@
 * **Agents Table 추가 필드:**
     * `ollama_model_name` (varchar): `llama3.1`, `mistral` 등.
     * `context_window_size` (int): 모델별 허용 토큰 수 (로컬 모델마다 다르므로 관리 필요).
+* **[Update] DB Validation:** `ollama_model_name` 필드는 생성 시 반드시 설정되어야 하며, 유효한 Ollama 모델 이름이어야 함.
 
 ---
 

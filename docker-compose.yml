@@ -6,9 +6,9 @@ services:
     image: pgvector/pgvector:pg16  # pgvector가 기본 설치된 이미지 사용
     container_name: ai_corp_db
     environment:
-      POSTGRES_USER: ai_ceo
-      POSTGRES_PASSWORD: local_secure_password
-      POSTGRES_DB: ai_corp_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
@@ -28,11 +28,11 @@ services:
       - "8000:8000"
     environment:
       SECRET_KEY: your_secret_key_here # Replace with a strong secret key
-      DB_NAME: ai_corp_db
-      DB_USER: ai_ceo
-      DB_PASSWORD: local_secure_password
-      DB_HOST: postgres
-      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
       OLLAMA_HOST: ${OLLAMA_HOST}
     depends_on:
       - postgres

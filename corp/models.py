@@ -7,11 +7,23 @@ class Agent(models.Model):
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=255)
     manager = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+    ollama_model_name = models.CharField(max_length=255, null=True, blank=True)
+    context_window_size = models.IntegerField(null=True, blank=True)
     config = JSONField(default=dict)  # Stores ollama_model, temperature, system_prompt
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
+
+    def create_sub_agent(self, name, role, ollama_model_name=None, context_window_size=None):
+        return Agent.objects.create(
+            name=name,
+            role=role,
+            manager=self,
+            ollama_model_name=ollama_model_name,
+            context_window_size=context_window_size,
+            config={}
+        )
 
 class Task(models.Model):
     class TaskStatus(models.TextChoices):

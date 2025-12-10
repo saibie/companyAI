@@ -28,6 +28,12 @@ def execute_code(code: str) -> str:
     print(f"---MOCK TOOL: Executing code: {code}---")
     return f"Mock code execution result for '{code}': Code executed successfully."
 
+@tool
+def create_sub_agent(name: str, role: str, ollama_model_name: str = None, context_window_size: int = None) -> str:
+    """Creates a new sub-agent under the current agent."""
+    print(f"---MOCK TOOL: Creating sub-agent {name} with role {role}...")
+    return f"Sub-agent {name} created successfully."
+
 class AgentNodes:
     def __init__(self):
         self.ollama_client = OllamaClient()
@@ -85,6 +91,20 @@ class AgentNodes:
             mock_code = "print('hello from mock code')"
             tool_output = execute_code.invoke({"code": mock_code})
             tool_outputs.append(f"Code Execution Output: {tool_output}")
+        
+        if "create_sub_agent" in plan.lower():
+            # Extract parameters from the plan (simplified for mock)
+            name = "sub_agent_1"
+            role = "task_specialist"
+            ollama_model_name = "llama3.1:8b"
+            context_window_size = 8192
+            tool_output = create_sub_agent.invoke({
+                "name": name,
+                "role": role,
+                "ollama_model_name": ollama_model_name,
+                "context_window_size": context_window_size
+            })
+            tool_outputs.append(f"Sub-agent Created: {tool_output}")
             
         new_scratchpad = scratchpad + "\n" + "\n".join(tool_outputs) if tool_outputs else scratchpad
         return {"scratchpad": new_scratchpad, "chat_history": [AIMessage(content=f"Used tools: {tool_outputs}")]}
