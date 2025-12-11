@@ -15,7 +15,7 @@ class OllamaClient:
     def _get(self, endpoint):
         import requests # Import requests inside the method
         url = f"{self.host}{endpoint}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         return response.json()
 

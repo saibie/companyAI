@@ -1,22 +1,25 @@
 <ul>
     {% for task in tasks %}
         <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div>
-                <strong>{{ task.title }}</strong> (Assignee: {{ task.assignee.name }})
-                <p style="margin: 5px 0; font-size: 0.9em; color: #555;">Result: {{ task.result|truncatechars:100 }}</p>
-            </div>
             <div style="display: flex; gap: 10px;">
-                <form hx-post="{% url 'corp:dashboard' %}" hx-target="#task-list-container" hx-swap="outerHTML" style="margin: 0;">
+                <form hx-post="{% url 'corp:dashboard' %}" 
+                      hx-target="#task-list-container" 
+                      hx-swap="innerHTML" 
+                      style="margin: 0;">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="approve_task">
                     <input type="hidden" name="task_id" value="{{ task.id }}">
                     <button type="submit" style="background-color: #28a745;">Approve</button>
                 </form>
-                <form hx-post="{% url 'corp:dashboard' %}" hx-target="#task-list-container" hx-swap="outerHTML" style="margin: 0;">
+
+                <form hx-post="{% url 'corp:dashboard' %}" 
+                      hx-target="#task-list-container" 
+                      hx-swap="innerHTML" 
+                      style="margin: 0;">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="reject_task">
                     <input type="hidden" name="task_id" value="{{ task.id }}">
-                    <input type="text" name="feedback" placeholder="Feedback for rejection" required style="width: 150px; padding: 5px;">
+                    <input type="text" name="feedback" placeholder="Feedback" required style="width: 150px; padding: 5px;">
                     <button type="submit" style="background-color: #dc3545;">Reject</button>
                 </form>
             </div>

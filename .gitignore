@@ -9,3 +9,8 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+# Custom
+export_code.sh
+project_context_*.txt
+agent_workflow_diagram.png
