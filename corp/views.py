@@ -6,7 +6,7 @@ import requests
 
 class DashboardView(View):
     def get(self, request, *args, **kwargs):
-        agents = Agent.objects.all().order_by('name')
+        agents = Agent.objects.filter(manager__isnull=True).order_by('name')
         tasks = Task.objects.filter(status=Task.TaskStatus.WAIT_APPROVAL).order_by('-id')
         
         ollama_client = OllamaClient()
@@ -39,7 +39,7 @@ class DashboardView(View):
             Agent.objects.create(name=name, role=role, manager=manager)
             
             if request.htmx:
-                agents = Agent.objects.all().order_by('name')
+                agents = Agent.objects.filter(manager__isnull=True).order_by('name')
                 return render(request, 'corp/partials/agent_list.html', {'agents': agents})
 
         elif action == 'create_task':

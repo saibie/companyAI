@@ -1,7 +1,32 @@
-<ul>
+<ul style="padding: 0;">
     {% for task in tasks %}
-        <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <div style="display: flex; gap: 10px;">
+        <li style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; background-color: #fff;">
+            
+            <div style="margin-bottom: 15px;">
+                <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 5px;">
+                    {{ task.title }} 
+                    <span style="font-size: 0.8em; color: #666; font-weight: normal;">
+                        (Agent: {{ task.assignee.name }})
+                    </span>
+                </div>
+                
+                <div style="color: #555; margin-bottom: 10px; font-size: 0.9em;">
+                    <strong>Description:</strong> {{ task.description }}
+                </div>
+
+                {% if task.result %}
+                <div style="background-color: #f1f8ff; padding: 10px; border-left: 4px solid #007bff; border-radius: 4px;">
+                    <strong>📝 Result:</strong><br>
+                    <span style="white-space: pre-wrap;">{{ task.result }}</span>
+                </div>
+                {% else %}
+                <div style="color: #999;">
+                    (No result generated yet...)
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
                 <form hx-post="{% url 'corp:dashboard' %}" 
                       hx-target="#task-list-container" 
                       hx-swap="innerHTML" 
@@ -9,22 +34,27 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="approve_task">
                     <input type="hidden" name="task_id" value="{{ task.id }}">
-                    <button type="submit" style="background-color: #28a745;">Approve</button>
+                    <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        ✅ Approve
+                    </button>
                 </form>
 
                 <form hx-post="{% url 'corp:dashboard' %}" 
                       hx-target="#task-list-container" 
                       hx-swap="innerHTML" 
-                      style="margin: 0;">
+                      style="margin: 0; display: flex; gap: 5px;">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="reject_task">
                     <input type="hidden" name="task_id" value="{{ task.id }}">
-                    <input type="text" name="feedback" placeholder="Feedback" required style="width: 150px; padding: 5px;">
-                    <button type="submit" style="background-color: #dc3545;">Reject</button>
+                    <input type="text" name="feedback" placeholder="Reason for rejection..." required 
+                           style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
+                    <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        ❌ Reject
+                    </button>
                 </form>
             </div>
         </li>
     {% empty %}
-        <li>No tasks waiting for approval.</li>
+        <li style="color: #666; text-align: center; padding: 20px;">No tasks waiting for approval.</li>
     {% endfor %}
 </ul>
