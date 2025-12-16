@@ -63,24 +63,40 @@ def fire_sub_agent(manager_name: str, target_name: str, reason: str) -> str:
         target_name: The name of the subordinate to fire.
         reason: The reason for firing.
     """
-    print(f"🔥 [Tool] Firing agent: {target_name} by {manager_name}")
+    # [수정] 입력값 공백 제거로 매칭 정확도 향상
+    manager_name = manager_name.strip()
+    target_name = target_name.strip()
+    
+    print(f"🔥 [Tool] Attempting to fire: '{target_name}' by '{manager_name}'")
+    
     try:
-        # 1. 권한 확인 (내 직속 부하인가?)
+        # 1. 권한 확인
         manager = Agent.objects.filter(name=manager_name).first()
         if not manager:
-            return f"Error: Manager '{manager_name}' not found."
+            msg = f"Error: Manager '{manager_name}' not found."
+            print(f"❌ [Tool Error] {msg}") # [추가] 에러 로그 출력
+            return msg
 
-        # manager=manager 조건을 추가하여 자신의 직속 부하만 찾음
+        # 2. 대상 찾기 (자신의 직속 부하만)
         target = Agent.objects.filter(name=target_name, manager=manager).first()
         
         if not target:
-            return f"Error: Agent '{target_name}' is not your direct subordinate or does not exist."
+            # 디버깅을 위해 현재 부하 직원 명단을 로그에 남김
+            current_subs = list(manager.subordinates.values_list('name', flat=True))
+            msg = f"Error: Agent '{target_name}' is not found under manager '{manager_name}'. (Current subs: {current_subs})"
+            print(f"❌ [Tool Error] {msg}") # [추가] 에러 로그 출력
+            return msg
 
-        # 2. 해고 실행 (models.py의 delete 로직에 의해 승계 처리됨)
+        # 3. 해고 실행
         target.delete()
-        return f"Success: Fired {target_name}. Reason: {reason}"
+        success_msg = f"Success: Fired '{target_name}'. Reason: {reason}"
+        print(f"✅ [Tool Success] {success_msg}") # [추가] 성공 로그 출력
+        return success_msg
+        
     except Exception as e:
-        return f"Error firing agent: {str(e)}"
+        error_msg = f"Error firing agent: {str(e)}"
+        print(f"❌ [Tool Exception] {error_msg}") # [추가] 예외 로그 출력
+        return error_msg
 
 @tool
 def assign_task(manager_name: str, assignee_name: str, title: str, description: str) -> str:
@@ -140,14 +156,70 @@ TOOLS = [search_web, create_sub_agent, fire_sub_agent, assign_task, create_plan]
 # 2. 상태(State) 및 노드(Nodes) 정의
 # ==============================================================================
 
-class AgentState(TypedDict):
-    # LangGraph가 메시지 흐름(Human -> AI -> Tool -> ToolOutput -> AI)을 자동 추적
-    messages: Annotated[List[BaseMessage], lambda x, y: x + y]
-    
-    # Context Data
+class ReviewState(TypedDict):
     task_title: str
     task_description: str
-    agent_id: int 
+    proposed_result: str # 부하직원이 올린 결재안
+    manager_name: str
+    subordinate_name: str
+    decision: str # APPROVE or REJECT
+    feedback: str
+
+def manager_review_node(state: ReviewState):
+    """매니저가 부하직원의 결재안을 검토하는 노드"""
+    print(f"🧐 Manager {state['manager_name']} is reviewing task from {state['subordinate_name']}...")
+    
+    llm = ChatOllama(model="llama3.1", temperature=0) # 또는 qwen2.5 등
+    
+    prompt = f"""You are {state['manager_name']}, a manager AI.
+    Your subordinate, {state['subordinate_name']}, has submitted a task for your approval.
+    
+    [Task Info]
+    Title: {state['task_title']}
+    Description: {state['task_description']}
+    
+    [Proposed Action/Result by Subordinate]
+    {state['proposed_result']}
+    
+    [Your Job]
+    Evaluate the proposal.
+    1. If it looks good and aligns with the goal, APPROVE it.
+    2. If it is wrong, dangerous, or incomplete, REJECT it with constructive feedback.
+    
+    [Output Format]
+    You MUST output in this exact format:
+    DECISION: [APPROVE | REJECT]
+    FEEDBACK: [Your reasoning and instructions]
+    """
+    
+    response = llm.invoke(prompt).content
+    
+    # 파싱
+    decision = "REJECT"
+    feedback = response
+    
+    if "DECISION: APPROVE" in response:
+        decision = "APPROVE"
+    elif "DECISION: REJECT" in response:
+        decision = "REJECT"
+        
+    return {"decision": decision, "feedback": feedback}
+
+def create_review_workflow():
+    workflow = StateGraph(ReviewState)
+    workflow.add_node("manager_review", manager_review_node)
+    workflow.set_entry_point("manager_review")
+    workflow.add_edge("manager_review", END)
+    return workflow.compile()
+
+class AgentState(TypedDict):
+    messages: Annotated[List[BaseMessage], lambda x, y: x + y]
+    task_title: str
+    task_description: str
+    agent_id: int
+    task_status: str # [추가] 현재 태스크 상태 (THINKING, APPROVED 등)
+    prev_result: str # [추가] 이전에 작성했던 결과(제안서)
+    task_id: int
 
 class AgentNodes:
     def __init__(self):
@@ -161,60 +233,126 @@ class AgentNodes:
         self.llm_with_tools = self.llm.bind_tools(TOOLS)
 
     def agent_reasoning(self, state: AgentState):
-        """
-        에이전트의 사고(Reasoning) 단계.
-        DB에서 최신 조직도를 조회하여 시스템 프롬프트에 주입하고,
-        모델에게 도구를 사용할지 답변을 할지 결정하게 함.
-        """
-        # 1. 현재 에이전트 및 조직 정보 실시간 조회
         current_agent_id = state["agent_id"]
-        current_agent_name = "Unknown Agent"
+        task_status = state.get("task_status", "THINKING")
+        prev_result = state.get("prev_result", "")
+        
+        
+        task_id = state.get("task_id")
+        history_context = ""
+        
+        if task_id:
+            try:
+                # 현재 수행 중인 태스크 객체 가져오기
+                current_task = Task.objects.get(id=task_id)
+                
+                # Step 1에서 만든 related_name='logs'를 통해 로그 조회
+                logs = current_task.logs.all().order_by('created_at')
+                
+                if logs.exists():
+                    history_context = "\n[⚠️ HISTORY OF PAST FAILURES]\n"
+                    history_context += "You have attempted this task before but were REJECTED. Review the feedback carefully:\n"
+                    
+                    for i, log in enumerate(logs, 1):
+                        # 너무 길면 토큰 낭비니까 적당히 잘라서 보여줌
+                        short_result = log.result[:200] + "..." if len(log.result) > 200 else log.result
+                        history_context += f"\n--- Attempt #{i} ---\n"
+                        history_context += f"My Output: {short_result}\n"
+                        history_context += f"Manager Feedback: {log.feedback}\n"
+                    
+                    history_context += "\nIMPORTANT: Do NOT repeat the mistakes from above. Improve your plan based on the feedback.\n"
+            except Task.DoesNotExist:
+                pass
+        
+        # 1. 현재 에이전트 및 하위 조직 정보 조회
+        current_agent_name = "Unknown"
+        subordinates = [] 
         subordinates_text = "None (You have no subordinates)"
         
         try:
             agent = Agent.objects.get(id=current_agent_id)
             current_agent_name = agent.name
-            
-            # 직속 부하 직원 명단 조회
-            subs = agent.subordinates.filter(is_active=True)
-            if subs.exists():
-                sub_list = [f"- {s.name} (Role: {s.role})" for s in subs]
+            subordinates = list(agent.subordinates.filter(is_active=True))
+            if subordinates:
+                # [수정] ID를 포함하여 출력 (동명이인 구분 및 디버깅 용이)
+                sub_list = [f"- [ID: {s.id}] {s.name} ({s.role})" for s in subordinates]
                 subordinates_text = "\n".join(sub_list)
-                
         except Agent.DoesNotExist:
-            print(f"⚠️ Warning: Agent ID {current_agent_id} not found.")
+            pass
 
-        # 2. 시스템 프롬프트 구성 (가장 중요)
+        # 2. 태스크 의도 파악
+        task_context = (state['task_title'] + " " + state['task_description']).lower()
+        is_firing_task = any(word in task_context for word in ['fire', 'layoff', 'dismiss', 'remove', 'delete'])
+        is_hiring_task = any(word in task_context for word in ['hire', 'recruit', 'create', 'new agent'])
+
+        # 3. 상태에 따른 프롬프트 분기
+        if task_status == "APPROVED":
+            # --- [집행 단계] ---
+            instruction_prompt = f"""
+            [STATUS: APPROVED - EXECUTION PHASE]
+            Your proposal has been APPROVED.
+            
+            [Your Approved Plan]
+            {prev_result}
+            
+            [ACTION REQUIRED]
+            Now, you must EXECUTE the plan using the appropriate tools.
+            Do NOT just say "I did it". actually USE THE TOOLS.
+            """
+
+            if is_firing_task:
+                if subordinates:
+                    instruction_prompt += f"""
+                    [REALITY CHECK: FIRING]
+                    Look at [Your Team Status]. There are still {len(subordinates)} subordinates listed.
+                    This means they are NOT fired yet.
+                    You MUST use 'fire_sub_agent' tool for each person you planned to fire.
+                    MAKE SURE to use the exact name displayed in [Your Team Status].
+                    """
+                else:
+                    instruction_prompt += "\n[REALITY CHECK] Your team is empty. It seems you have successfully fired everyone."
+
+            elif is_hiring_task:
+                instruction_prompt += """
+                [REALITY CHECK: HIRING]
+                To hire someone, you MUST call 'create_sub_agent'. 
+                If you haven't called it yet, do it now.
+                """
+                
+        else:
+            # --- [기획/제안 단계] ---
+            instruction_prompt = f"""
+            [STATUS: PLANNING / PROPOSAL]
+            You are analyzing the task.
+            
+            [Instructions]
+            1. If the task involves sensitive actions (Hiring, Firing):
+               - DO NOT execute the tool yet.
+               - Write a proposal: "I propose to [Action] because..."
+               - This will be sent to your manager for approval.
+            2. For safe tasks, use tools immediately.
+            """
+
+        # 4. 최종 시스템 프롬프트 조립
         system_prompt_text = f"""You are {current_agent_name}, a capable AI manager.
 
-[Your Team Status]
-Here is the list of your DIRECT subordinates. You can assign tasks to them or fire them:
-{subordinates_text}
-
-[Current Task]
-Title: {state['task_title']}
-Description: {state['task_description']}
-
-[Instructions]
-1. Analyze the task.
-2. If you need external information, use 'search_web'.
-3. If the task is too big, delegate it to your subordinates using 'assign_task'.
-4. If you lack manpower, hire new agents using 'create_sub_agent'.
-5. If a subordinate is underperforming or not needed, you can fire them using 'fire_sub_agent'.
-6. When using tools that ask for 'manager_name', YOU MUST provide your own name: '{current_agent_name}'.
-7. If you have completed the task yourself, provide the final answer clearly.
-"""
+        [Your Team Status] (Real-time Data)
+        {subordinates_text}
         
-        # 3. 메시지 히스토리 조립 (System Prompt + 대화 기록)
-        # LangGraph는 state['messages']에 이전 대화(Tool 결과 포함)를 자동으로 누적합니다.
+        [Current Task]
+        Title: {state['task_title']}
+        Description: {state['task_description']}
+        
+        {instruction_prompt}
+        
+        [Tool Usage Rule]
+        - When using tools, manager_name argument MUST be '{current_agent_name}'.
+        - Use target_name EXACTLY as shown in the team list.
+        """
+        
         messages = [SystemMessage(content=system_prompt_text)] + state["messages"]
-        
-        # 4. LLM 호출
-        # 모델은 스스로 ToolMessage(도구 호출)를 반환할지, AIMessage(최종 답변)를 반환할지 결정합니다.
-        print(f"🤖 Agent {current_agent_name} is thinking...")
         response = self.llm_with_tools.invoke(messages)
         
-        # 결과 반환 (state 업데이트)
         return {"messages": [response]}
 
 

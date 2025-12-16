@@ -57,7 +57,7 @@ class Agent(models.Model):
                         assignee=sub,
                         creator=grandparent if grandparent else sub, # 조부모 혹은 본인 발의
                         status=Task.TaskStatus.THINKING, # 즉시 처리하도록 THINKING 상태로
-                        priority='URGENT' # (Task 모델에 priority 필드 추가 필요, 없으면 생략)
+                        # priority='URGENT' # (Task 모델에 priority 필드 추가 필요, 없으면 생략)
                     )
             
             # 3. 실제 삭제
@@ -89,6 +89,22 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+class TaskLog(models.Model):
+    """
+    Task의 수행 이력을 저장하는 모델 (반려 기록용)
+    """
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='logs')
+    # 당시의 결과물
+    result = models.TextField()
+    # 당시의 피드백 (반려 사유)
+    feedback = models.TextField()
+    # 당시의 상태 (REJECTED, APPROVED 등)
+    status = models.CharField(max_length=20)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Log for {self.task.title} - {self.created_at}"
 
 class AgentMemory(models.Model):
     class MemoryType(models.TextChoices):

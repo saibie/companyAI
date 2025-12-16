@@ -68,6 +68,17 @@ class DashboardView(View):
             task_id = request.POST.get('task_id')
             feedback = request.POST.get('feedback')
             task = get_object_or_404(Task, id=task_id)
+            
+            # [추가] 반려 전, 현재 제출물과 피드백을 로그로 저장
+            from .models import TaskLog  # 상단 import 권장
+            TaskLog.objects.create(
+                task=task,
+                result=task.result,   # 에이전트가 제출했던 결과
+                feedback=feedback,    # 지금 내리는 피드백
+                status='REJECTED'
+            )
+
+            # 기존 로직 (상태 초기화 및 피드백 덮어쓰기)
             task.status = Task.TaskStatus.THINKING
             task.feedback = feedback
             task.save()
