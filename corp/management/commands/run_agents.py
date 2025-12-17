@@ -113,5 +113,36 @@ class Command(BaseCommand):
                     
                 except Exception as e:
                     print(f"Error in review: {e}")
+                    
+            # ------------------------------------------------------------------
+            # [NEW] Case C: Check Waiting Managers (Bottom-up Reporting)
+            # ------------------------------------------------------------------
+            # 하위 업무가 다 끝났는지 확인하고, 끝났으면 상사를 깨운다.
+            waiting_tasks = Task.objects.filter(status=Task.TaskStatus.WAIT_SUBTASK)
+            
+            for parent_task in waiting_tasks:
+                # 이 태스크에 연결된 하위 태스크들 조회
+                sub_tasks = Task.objects.filter(parent_task=parent_task)
+                
+                # 모든 하위 태스크가 완료(DONE)되었는지 확인
+                # (주의: 만약 하위 태스크가 REJECTED라면 다시 THINKING일 것이므로 DONE 아님)
+                if sub_tasks.exists() and not sub_tasks.exclude(status=Task.TaskStatus.DONE).exists():
+                    
+                    self.stdout.write(self.style.SUCCESS(f"🔔 All sub-tasks for '{parent_task.title}' are DONE. Waking up manager..."))
+                    
+                    # 1. 하위 보고서 취합
+                    reports = []
+                    for st in sub_tasks:
+                        reports.append(f"- Sub-agent {st.assignee.name} Report on '{st.title}':\n{st.result}")
+                    
+                    combined_report = "\n\n".join(reports)
+                    
+                    # 2. 상급자 태스크의 '이전 결과' 필드나 로그에 보고서 내용 추가
+                    # (여기서는 result 필드에 임시로 붙이거나, 다음 턴의 Prompt에 주입하기 위해 result에 저장)
+                    parent_task.result = (parent_task.result or "") + f"\n\n[SUBORDINATE REPORTS]\n{combined_report}\n[INSTRUCTION]\nSynthesize these reports and create the final output."
+                    
+                    # 3. 상태를 다시 THINKING으로 변경 -> Agent가 깨어나서 종합 보고서 작성 시작
+                    parent_task.status = Task.TaskStatus.THINKING
+                    parent_task.save()
 
             time.sleep(5)

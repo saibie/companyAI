@@ -1,5 +1,6 @@
-import os
+import os, datetime
 import django
+from django.utils import timezone
 from typing import TypedDict, List, Annotated
 from langchain_core.messages import BaseMessage, SystemMessage
 from langgraph.graph import StateGraph, END
@@ -11,6 +12,7 @@ from langchain_community.tools import DuckDuckGoSearchRun
 # Django 모델 접근
 from corp.models import Agent, Task 
 
+GLOBAL_MODEL_NAME = os.getenv("LLM_MODEL", "qwen3:8b")
 # ==============================================================================
 # 1. 도구(Tools) 정의 - Script MCP 스타일
 # ==============================================================================
@@ -99,36 +101,42 @@ def fire_sub_agent(manager_name: str, target_name: str, reason: str) -> str:
         return error_msg
 
 @tool
-def assign_task(manager_name: str, assignee_name: str, title: str, description: str) -> str:
+def assign_task(manager_name: str, assignee_name: str, title: str, description: str, current_task_id: int) -> str:
     """
     Assigns a task to a subordinate.
     Args:
-        manager_name: The name of the agent calling this tool (YOUR name).
-        assignee_name: The name of the subordinate to receive the task.
+        manager_name: The name of the agent calling this tool.
+        assignee_name: The name of the subordinate.
         title: Task title.
         description: Detailed instructions.
+        current_task_id: The ID of the task YOU are currently working on.
     """
-    print(f"📨 [Tool] Assigning task '{title}' to {assignee_name}")
+    print(f"📨 [Tool] Assigning task '{title}' to {assignee_name} (Parent Task: {current_task_id})")
     try:
         manager = Agent.objects.filter(name=manager_name).first()
-        
-        # 부하 직원 검색 (자신의 조직 내에서만 검색하는 것이 안전하나, 편의상 전체 검색 후 매니저 확인)
         assignee = Agent.objects.filter(name=assignee_name).first()
         
-        if not manager:
-            return "Error: calling agent (manager) not found."
-        if not assignee:
-            return f"Error: Assignee '{assignee_name}' not found."
+        # 현재 수행 중인(부모) 태스크 조회
+        parent_task = Task.objects.filter(id=current_task_id).first()
 
-        # 태스크 생성 (Django ORM)
-        Task.objects.create(
+        if not manager or not assignee or not parent_task:
+            return "Error: Manager, Assignee, or Current Task not found."
+
+        # 1. 하위 태스크 생성 (parent_task 연결)
+        sub_task = Task.objects.create(
             title=title,
             description=description,
             creator=manager,
             assignee=assignee,
-            status=Task.TaskStatus.THINKING # 할당 즉시 생각 시작
+            parent_task=parent_task,  # [핵심] 부모 태스크 연결
+            status=Task.TaskStatus.THINKING
         )
-        return f"Success: Task '{title}' assigned to {assignee_name}."
+        
+        # 2. 부모 태스크 상태 변경 (대기 상태로 전환)
+        parent_task.status = Task.TaskStatus.WAIT_SUBTASK
+        parent_task.save()
+
+        return f"Success: Task assigned to {assignee_name}. I am now waiting for their report."
     except Exception as e:
         return f"Error assigning task: {str(e)}"
 
@@ -169,7 +177,7 @@ def manager_review_node(state: ReviewState):
     """매니저가 부하직원의 결재안을 검토하는 노드"""
     print(f"🧐 Manager {state['manager_name']} is reviewing task from {state['subordinate_name']}...")
     
-    llm = ChatOllama(model="llama3.1", temperature=0) # 또는 qwen2.5 등
+    llm = ChatOllama(model=GLOBAL_MODEL_NAME, temperature=0) # 또는 qwen2.5 등
     
     prompt = f"""You are {state['manager_name']}, a manager AI.
     Your subordinate, {state['subordinate_name']}, has submitted a task for your approval.
@@ -224,10 +232,8 @@ class AgentState(TypedDict):
 class AgentNodes:
     def __init__(self):
         # [설정] 사용할 Ollama 모델명 (Tool Calling 지원 모델 필수: llama3.1, mistral-nemo 등)
-        model_name = "qwen3:8b" 
-        
         # 1. ChatOllama 초기화
-        self.llm = ChatOllama(model=model_name, temperature=0)
+        self.llm = ChatOllama(model=GLOBAL_MODEL_NAME, temperature=0)
         
         # 2. bind_tools: 모델에게 도구 명세 주입 (Native Tool Calling 활성화)
         self.llm_with_tools = self.llm.bind_tools(TOOLS)
@@ -240,6 +246,8 @@ class AgentNodes:
         
         task_id = state.get("task_id")
         history_context = ""
+        
+        now = time
         
         if task_id:
             try:
@@ -335,19 +343,20 @@ class AgentNodes:
 
         # 4. 최종 시스템 프롬프트 조립
         system_prompt_text = f"""You are {current_agent_name}, a capable AI manager.
-
-        [Your Team Status] (Real-time Data)
-        {subordinates_text}
         
-        [Current Task]
+        [Current Task Info]
+        Task ID: {state['task_id']}  <-- VERY IMPORTANT
         Title: {state['task_title']}
         Description: {state['task_description']}
         
+        [Your Team Status]
+        {subordinates_text}
+        
         {instruction_prompt}
         
-        [Tool Usage Rule]
-        - When using tools, manager_name argument MUST be '{current_agent_name}'.
-        - Use target_name EXACTLY as shown in the team list.
+        [Rules for Delegation]
+        - If you assign a task to a subordinate, you MUST pass the 'current_task_id' ({state['task_id']}) to the 'assign_task' tool.
+        - After assigning, your status will automatically change to WAIT_SUBTASK. Do not output "FINAL RESULT" yet.
         """
         
         messages = [SystemMessage(content=system_prompt_text)] + state["messages"]

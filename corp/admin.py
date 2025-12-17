@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Agent, Task, AgentMemory
+from .models import Agent, Task, AgentMemory, TaskLog
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
@@ -21,3 +21,10 @@ class AgentMemoryAdmin(admin.ModelAdmin):
     list_filter = ('type', 'agent')
     search_fields = ('content',)
     raw_id_fields = ('agent',)
+
+@admin.register(TaskLog)
+class TaskLogAdmin(admin.ModelAdmin):
+    list_display = ('task', 'created_at')
+    list_filter = ('task',)
+    search_fields = ('task__title', 'details')
+    raw_id_fields = ('task',)

@@ -68,6 +68,7 @@ class Task(models.Model):
     class TaskStatus(models.TextChoices):
         TODO = 'TODO', 'To Do'
         THINKING = 'THINKING', 'Thinking'
+        WAIT_SUBTASK = 'WAIT_SUBTASK', 'Waiting for Subtasks'
         WAIT_APPROVAL = 'WAIT_APPROVAL', 'Wait Approval'
         APPROVED = 'APPROVED', 'Approved'
         DONE = 'DONE', 'Done'
