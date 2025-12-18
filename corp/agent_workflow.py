@@ -247,7 +247,7 @@ class AgentNodes:
         task_id = state.get("task_id")
         history_context = ""
         
-        now = time
+        now = datetime.datetime.now()
         
         if task_id:
             try:
