@@ -7,6 +7,8 @@ from ai_core.tools.kms_tools import search_wiki_tool
 from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool
 from corp.services import agent_service, kms_service
 import time
+from datetime import datetime
+from django.utils import timezone
 from langgraph.errors import GraphRecursionError
 from langchain_core.tools import tool
 
@@ -48,11 +50,9 @@ def assign_task_tool(manager_name: str, assignee_name: str, title: str, descript
     """Assigns a task to a subordinate."""
     return agent_service.assign_task(manager_name, assignee_name, title, description, current_task_id)
 
-TOOLS = [
+BASE_TOOLS = [
     search_web, 
     create_plan, 
-    create_sub_agent_tool, 
-    fire_sub_agent_tool, 
     assign_task_tool, 
     search_wiki_tool,
     post_to_channel_tool,
@@ -65,15 +65,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("Starting AI Corp Runner..."))
         
-        agent_workflow = create_agent_workflow(TOOLS)
-        review_workflow = create_review_workflow() # 매니저용
+        # agent_workflow = create_agent_workflow(TOOLS)
+        review_workflow = create_review_workflow()
 
         while True:
-            # ------------------------------------------------------------------
+            # ==================================================================
             # Case A: [Subordinate] Do Work (THINKING or APPROVED)
-            # ------------------------------------------------------------------
-            # THINKING: 처음 일을 받아서 기획/제안하는 단계
-            # APPROVED: 승인받은 후 실제로 집행하는 단계
+            # ==================================================================
             active_tasks = Task.objects.filter(
                 status__in=[Task.TaskStatus.THINKING, Task.TaskStatus.APPROVED],
                 assignee__is_active=True
@@ -83,7 +81,17 @@ class Command(BaseCommand):
                 self.stdout.write(f"▶ Agent {task.assignee.name} working on '{task.title}' (State: {task.status})...")
                 
                 try:
-                    # 이전 결과(제안 내용)를 가져옴
+                    current_agent_tools = BASE_TOOLS.copy()
+                    
+                    if task.assignee.can_hire:
+                        current_agent_tools.append(create_sub_agent_tool)
+                        
+                    # 권한 체크: 해고 권한이 있을 때만 도구 지급
+                    if task.assignee.can_fire:
+                        current_agent_tools.append(fire_sub_agent_tool)
+                    
+                    agent_workflow = create_agent_workflow(current_agent_tools)
+                    
                     prev_result = task.result if task.result else ""
 
                     # 에이전트 정보 조회
@@ -121,7 +129,8 @@ class Command(BaseCommand):
                     final_state = agent_workflow.invoke(initial_state)
                     final_response = final_state["messages"][-1].content
                     
-                    # 결과 처리
+                    task.refresh_from_db()
+                    
                     task.result = final_response
                     
                     if task.status == Task.TaskStatus.APPROVED:
@@ -140,10 +149,15 @@ class Command(BaseCommand):
                             self.stdout.write(self.style.SUCCESS(f"   ↳ 💾 Saved to Corporate Wiki."))
                         except Exception as e:
                             print(f"   ↳ ❌ Failed to save to Wiki: {e}")
-                    else:
-                        # THINKING 상태였다면 -> 결재 대기(WAIT_APPROVAL)로 보냄
+                    
+                    elif task.status == Task.TaskStatus.WAIT_SUBTASK:
+                        # [핵심 수정] 도구(assign_task)가 이미 상태를 바꿨음 -> 건드리지 않고 대기
+                        self.stdout.write(self.style.WARNING(f"⏳ Task '{task.title}' delegated. Waiting for sub-tasks..."))
+                        
+                    elif task.status == Task.TaskStatus.THINKING:
+                        # 도구를 썼는데도 상태가 그대로거나, 그냥 생각만 정리함 -> 기획안 제출 (결재 요청)
                         task.status = Task.TaskStatus.WAIT_APPROVAL
-                        self.stdout.write(self.style.SUCCESS(f"📝 Task '{task.title}' sent for APPROVAL."))
+                        self.stdout.write(self.style.SUCCESS(f"📝 Task '{task.title}' sent for CEO/Manager APPROVAL."))
                     
                     task.save()
 

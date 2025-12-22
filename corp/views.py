@@ -7,7 +7,10 @@ import requests
 class DashboardView(View):
     def get(self, request, *args, **kwargs):
         agents = Agent.objects.filter(manager__isnull=True).order_by('name')
-        tasks = Task.objects.filter(status=Task.TaskStatus.WAIT_APPROVAL).order_by('-id')
+        tasks = Task.objects.filter(
+            status=Task.TaskStatus.WAIT_APPROVAL, 
+            assignee__manager__isnull=True
+        ).order_by('-id')
         
         ollama_client = OllamaClient()
         ollama_status = "Offline"
@@ -36,7 +39,7 @@ class DashboardView(View):
             role = request.POST.get('role')
             manager_id = request.POST.get('manager')
             manager = Agent.objects.get(id=manager_id) if manager_id else None
-            Agent.objects.create(name=name, role=role, manager=manager)
+            Agent.objects.create(name=name, role=role, manager=manager, can_hire=True, can_fire=True)
             
             if request.htmx:
                 agents = Agent.objects.filter(manager__isnull=True).order_by('name')

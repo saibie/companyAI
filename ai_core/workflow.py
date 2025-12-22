@@ -1,4 +1,5 @@
 import os
+from django.utils import timezone
 from typing import TypedDict, List, Annotated
 from langchain_core.messages import BaseMessage, SystemMessage
 from langgraph.graph import StateGraph, END
@@ -162,13 +163,19 @@ class AgentNodes:
         # CEO 공지사항 가져오기 (DB 조회)
         broadcast_msg = get_active_announcement()
         
+        current_time = timezone.localtime()
+        current_time_str = current_time.strftime("%Y-%m-%d %H:%M:%S %A")
         system_prompt_text = f"""You are {current_agent_name}, a capable AI manager.
+        
+        [Current Time]
+        {current_time_str}
+        
         [Current Task Info]
         Task ID: {state['task_id']}
         Title: {state['task_title']}
         Description: {state['task_description']}
         
-        {broadcast_msg}  <-- [여기 추가됨: CEO 공지사항이 있으면 최우선 표시]
+        {broadcast_msg}
 
         [Your Team Status]
         {subordinates_text}
@@ -181,6 +188,10 @@ class AgentNodes:
         - If you assign a task to a subordinate, you MUST pass the 'current_task_id' ({state['task_id']}) to the 'assign_task' tool.
         - After assigning, your status will automatically change to WAIT_SUBTASK. Do not output "FINAL RESULT" yet.
         """
+        
+        # print(f"\n🔍 [DEBUG: SYSTEM PROMPT sent to '{current_agent_name}'] " + "="*30)
+        # print(system_prompt_text)
+        # print("="*80 + "\n")
         
         messages = [SystemMessage(content=system_prompt_text)] + state["messages"]
         response = self.llm_with_tools.invoke(messages)
