@@ -1,9 +1,35 @@
 from django.core.management.base import BaseCommand
-from corp.models import Task, Agent
-# 새로 추가한 Review Workflow 임포트
-from corp.agent_workflow import create_agent_workflow, create_review_workflow, AgentState, ReviewState
+from corp.models import Task, Agent, TaskLog
+from ai_core.workflow import create_agent_workflow, create_review_workflow, AgentState, ReviewState
+from ai_core.tools.web_search import search_web
+from ai_core.tools.org_tools import create_plan
+from corp.services import agent_service
 import time
 from langgraph.errors import GraphRecursionError
+from langchain_core.tools import tool
+
+# ==============================================================================
+# 1. 도구(Tools) 정의
+# ==============================================================================
+
+# ai_core.tools와 corp.services를 합쳐서 LangGraph에 전달할 도구 목록 생성
+# `tool` 데코레이터를 사용하여 Django ORM을 사용하는 함수를 LangChain 도구로 변환
+@tool
+def create_sub_agent_tool(manager_name: str, name: str, role: str) -> str:
+    """Creates a new subordinate agent (Hiring)."""
+    return agent_service.create_sub_agent(manager_name, name, role)
+
+@tool
+def fire_sub_agent_tool(manager_name: str, target_name: str, reason: str) -> str:
+    """Fires a subordinate agent."""
+    return agent_service.fire_sub_agent(manager_name, target_name, reason)
+
+@tool
+def assign_task_tool(manager_name: str, assignee_name: str, title: str, description: str, current_task_id: int) -> str:
+    """Assigns a task to a subordinate."""
+    return agent_service.assign_task(manager_name, assignee_name, title, description, current_task_id)
+
+TOOLS = [search_web, create_plan, create_sub_agent_tool, fire_sub_agent_tool, assign_task_tool]
 
 class Command(BaseCommand):
     help = 'Runs the AI agents loop.'
@@ -11,7 +37,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("Starting AI Corp Runner..."))
         
-        agent_workflow = create_agent_workflow()
+        agent_workflow = create_agent_workflow(TOOLS)
         review_workflow = create_review_workflow() # 매니저용
 
         while True:
@@ -31,15 +57,37 @@ class Command(BaseCommand):
                 try:
                     # 이전 결과(제안 내용)를 가져옴
                     prev_result = task.result if task.result else ""
+
+                    # 에이전트 정보 조회
+                    agent = task.assignee
+                    subordinates = list(agent.subordinates.filter(is_active=True).values('id', 'name', 'role'))
+
+                    # 히스토리 컨텍스트 생성
+                    logs = task.logs.all().order_by('created_at')
+                    history_context = ""
+                    if logs.exists():
+                        history_context = "\n[⚠️ HISTORY OF PAST FAILURES]\n"
+                        history_context += "You have attempted this task before but were REJECTED. Review the feedback carefully:\n"
+                        
+                        for i, log in enumerate(logs, 1):
+                            short_result = log.result[:200] + "..." if len(log.result) > 200 else log.result
+                            history_context += f"\n--- Attempt #{i} ---\n"
+                            history_context += f"My Output: {short_result}\n"
+                            history_context += f"Manager Feedback: {log.feedback}\n"
+                        
+                        history_context += "\nIMPORTANT: Do NOT repeat the mistakes from above. Improve your plan based on the feedback.\n"
                     
                     initial_state = AgentState(
                         messages=[],
                         task_title=task.title,
                         task_description=task.description,
                         agent_id=task.assignee.id,
+                        agent_name=task.assignee.name,
                         task_status=task.status,
                         prev_result=prev_result,
-                        task_id=task.id
+                        task_id=task.id,
+                        subordinates=subordinates,
+                        history_context=history_context
                     )
 
                     final_state = agent_workflow.invoke(initial_state)
@@ -97,7 +145,6 @@ class Command(BaseCommand):
                         task.feedback = f"[Manager Approved]: {feedback}"
                         self.stdout.write(self.style.SUCCESS(f"👌 Approved by {manager.name}."))
                     else:
-                        from corp.models import TaskLog
                         TaskLog.objects.create(
                             task=task,
                             result=task.result,  # 부하가 낸 답안

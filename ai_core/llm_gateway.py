@@ -1,19 +1,21 @@
 import os
 import json
+import requests
 
 class OllamaClient:
+    """
+    A client for interacting with the Ollama API.
+    """
     def __init__(self, host=None):
         self.host = host or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 
     def _post(self, endpoint, payload):
-        import requests # Import requests inside the method
         url = f"{self.host}{endpoint}"
         response = requests.post(url, json=payload)
         response.raise_for_status()
         return response.json()
 
     def _get(self, endpoint):
-        import requests # Import requests inside the method
         url = f"{self.host}{endpoint}"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
@@ -45,7 +47,6 @@ class OllamaClient:
         return self._post("/api/embeddings", payload)
 
     def pull_model(self, model):
-        import requests # Import requests inside the method
         url = f"{self.host}/api/pull"
         payload = {
             "name": model,

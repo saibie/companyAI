@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View
 from .models import Agent, Task, AgentMemory
-from .ollama_client import OllamaClient
+from ai_core.llm_gateway import OllamaClient
 import requests
 
 class DashboardView(View):
