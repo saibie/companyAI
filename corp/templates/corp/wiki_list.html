@@ -1,0 +1,40 @@
+{% extends 'corp/base.html' %}
+
+{% block title %}Wiki - AI Corp{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h1>📚 Corporate Knowledge Base</h1>
+            </div>
+
+        <div class="wiki-grid" style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));">
+        {% for memory in memories %}
+            <div class="wiki-card" style="border: 1px solid #e1e4e8; border-radius: 8px; padding: 20px; background: #fff; transition: transform 0.2s;">
+                <h3 style="margin-top: 0;">
+                    <a href="{% url 'corp:wiki_detail' pk=memory.id %}" style="text-decoration: none; color: #0366d6;">
+                        {{ memory.subject }}
+                    </a>
+            </h3>
+                <div style="font-size: 0.85em; color: #666; margin-bottom: 10px;">
+                    📅 {{ memory.created_at|date:"Y-m-d H:i" }} <br>
+                {% if memory.source_task %}
+                        🔗 From Task: {{ memory.source_task.title|truncatechars:20 }}
+                {% else %}
+                        ✍️ Manual Entry
+                {% endif %}
+                </div>
+                <p style="color: #444; font-size: 0.95em; line-height: 1.5;">
+                    {{ memory.content|truncatechars:100 }}
+            </p>
+                <a href="{% url 'corp:wiki_detail' pk=memory.id %}" style="font-size: 0.9em; text-decoration: none; color: #007bff;">Read more &rarr;</a>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                <p>아직 저장된 지식이 없습니다.</p>
+                <p>에이전트가 태스크를 성공적으로 완료하면 자동으로 여기에 지식이 쌓입니다.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

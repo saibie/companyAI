@@ -1,0 +1,22 @@
+{% extends 'corp/base.html' %}
+
+{% block title %}{{ memory.subject }} - Wiki{% endblock %}
+
+{% block content %}
+    <div class="panel">
+        <a href="{% url 'corp:wiki_list' %}" style="display:inline-block; margin-bottom:15px; text-decoration:none; color:#666;">&larr; Back to Wiki List</a>
+        
+        <h1 style="border-bottom: 2px solid #eee; padding-bottom: 15px;">{{ memory.subject }}</h1>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9em; color: #555;">
+            <strong>Created:</strong> {{ memory.created_at|date:"Y-m-d H:i:s" }}<br>
+            {% if memory.source_task %}
+                <strong>Source Task:</strong> {{ memory.source_task.title }} (Agent: {{ memory.source_task.assignee.name }})
+            {% endif %}
+        </div>
+
+        <div class="wiki-content" style="line-height: 1.8; font-size: 1.1em; color: #333; white-space: pre-wrap;">
+{{ memory.content }}
+        </div>
+    </div>
+{% endblock %}

@@ -16,7 +16,7 @@ def get_embedding(text: str):
         print(f"❌ Embedding Error: {e}")
         return []
 
-def add_knowledge(subject: str, content: str, source_task_id: int = None):
+def add_knowledge(owner, subject: str, content: str, source_task_id: int = None):
     """지식을 벡터화하여 위키에 저장합니다."""
     vector = get_embedding(f"{subject}\n{content}")
     if not vector:
@@ -27,6 +27,7 @@ def add_knowledge(subject: str, content: str, source_task_id: int = None):
         source_task = Task.objects.filter(id=source_task_id).first()
 
     memory = CorporateMemory.objects.create(
+        owner=owner,
         subject=subject,
         content=content,
         embedding=vector,

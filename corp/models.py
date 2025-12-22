@@ -1,52 +1,62 @@
+import uuid
 from django.db import models
+from django.contrib.auth.models import User
 from django.db.models import JSONField
 from django.db import transaction
 from pgvector.django import VectorField
 
 class Agent(models.Model):
-    id = models.AutoField(primary_key=True)
+    # [변경] ID를 UUIDv4로 변경 (모든 모델 공통 적용)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # [추가] 소유권 명시: 이 에이전트가 어떤 '사용자(CEO)'의 것인지 구분
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agents')
+    
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=255)
     
-    # 계층 구조 (Manager 삭제 시 DB에선 NULL로 두되, 로직으로 처리)
+    # manager가 null이면, 이 에이전트는 owner(사용자)의 직속 부하입니다.
     manager = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinates')
-    depth = models.IntegerField(default=0) # CEO=0, 직속=1, 그 아래=2 ...
-    can_hire = models.BooleanField(default=False) # 고용 권한
-    can_fire = models.BooleanField(default=False) # 해고 권한
+    depth = models.IntegerField(default=0)
+    
+    can_hire = models.BooleanField(default=False)
+    can_fire = models.BooleanField(default=False)
     
     ollama_model_name = models.CharField(max_length=255, null=True, blank=True)
     context_window_size = models.IntegerField(null=True, blank=True)
     config = JSONField(default=dict)
     is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.role})"
     
     def save(self, *args, **kwargs):
         # 저장 전 Depth 자동 계산
         if self.manager:
             self.depth = self.manager.depth + 1
+            # 하위 에이전트는 상위 에이전트와 같은 owner를 가짐 (무결성 유지)
+            self.owner = self.manager.owner
         else:
             self.depth = 0
         super().save(*args, **kwargs)
 
     def create_sub_agent(self, name, role, ollama_model_name=None, context_window_size=None, can_hire=False, can_fire=False):
         return Agent.objects.create(
+            owner=self.owner,  # [중요] 생성자의 소유주를 그대로 상속
             name=name,
             role=role,
             manager=self,
             ollama_model_name=ollama_model_name,
             context_window_size=context_window_size,
-            can_hire=can_hire, # 권한 부여
+            can_hire=can_hire,
             can_fire=can_fire,
             config={}
         )
     
     def is_descendant_of(self, potential_ancestor):
-        """
-        자신이 potential_ancestor의 하위 조직(손자, 증손자 포함)에 속하는지 확인합니다.
-        (직권 해고 시 권한 확인용)
-        """
         current = self.manager
         while current:
             if current == potential_ancestor:
@@ -57,35 +67,35 @@ class Agent(models.Model):
     def delete(self, *args, **kwargs):
         """
         [Fail-safe Firing Logic]
-        에이전트 삭제 시 하위 에이전트를 조부모(Grandparent)에게 자동 승계하고,
-        한국어로 된 긴급 보고 태스크를 생성합니다.
+        에이전트 삭제 시 하위 에이전트를 조부모(Grandparent)에게 자동 승계합니다.
         """
         with transaction.atomic():
-            subordinates = list(self.subordinates.all()) # 미리 리스트로 평가
-            grandparent = self.manager # 삭제되는 나의 상사
+            subordinates = list(self.subordinates.all())
+            grandparent = self.manager 
 
             if subordinates:
-                # 1. 소속 변경 (입양)
+                # 1. 소속 변경 (입양) -> 조부모 혹은 사용자의 직속(None)으로 변경
                 self.subordinates.all().update(manager=grandparent)
 
-                # 2. 알림 Task 생성 (한국어)
-                grandparent_name = grandparent.name if grandparent else "CEO (최상위)"
+                # 2. 알림 Task 생성
+                # grandparent가 없으면 사용자(Human CEO)가 관리하게 됨
+                grandparent_name = grandparent.name if grandparent else "Human CEO (User)"
                 
                 for sub in subordinates:
                     Task.objects.create(
+                        # Task 생성 시 creator 설정 주의: 
+                        # grandparent가 있으면 그가 creator, 없으면 시스템 알림이므로 creator=None
+                        creator=grandparent if grandparent else None,
+                        assignee=sub,
                         title=f"[긴급] 조직 개편에 따른 업무 보고",
                         description=(
                             f"직속 상사 '{self.name}'(이)가 해고/삭제되었습니다. "
                             f"현재 귀하는 '{grandparent_name}' 직속으로 변경되었습니다. "
                             f"현재 진행 중인 업무 현황을 파악하여 새로운 상급자에게 즉시 보고하십시오."
                         ),
-                        assignee=sub,
-                        creator=grandparent if grandparent else sub, # 조부모 혹은 본인 발의
-                        status=Task.TaskStatus.THINKING, # 즉시 처리하도록 THINKING 상태로
-                        # priority='URGENT' # (Task 모델에 priority 필드 추가 필요, 없으면 생략)
+                        status=Task.TaskStatus.THINKING,
                     )
             
-            # 3. 실제 삭제
             super().delete(*args, **kwargs)
 
 
@@ -100,7 +110,7 @@ class Task(models.Model):
         DONE = 'DONE', 'Done'
         REJECTED = 'REJECTED', 'Rejected'
 
-    id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
     description = models.TextField()
     status = models.CharField(
@@ -108,30 +118,33 @@ class Task(models.Model):
         choices=TaskStatus.choices,
         default=TaskStatus.TODO,
     )
-    creator = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='created_tasks')
+    
+    # [변경] creator가 null이면 '사용자(Human)'가 직접 지시한 태스크입니다.
+    creator = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='created_tasks', null=True, blank=True)
     assignee = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='assigned_tasks')
+    
     parent_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     result = models.TextField(blank=True, null=True)
     feedback = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
+
 class TaskLog(models.Model):
-    """
-    Task의 수행 이력을 저장하는 모델 (반려 기록용)
-    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='logs')
-    # 당시의 결과물
     result = models.TextField()
-    # 당시의 피드백 (반려 사유)
     feedback = models.TextField()
-    # 당시의 상태 (REJECTED, APPROVED 등)
     status = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Log for {self.task.title} - {self.created_at}"
+        return f"Log for {self.task.title}"
+
 
 class AgentMemory(models.Model):
     class MemoryType(models.TextChoices):
@@ -139,7 +152,7 @@ class AgentMemory(models.Model):
         REFLECTION = 'reflection', 'Reflection'
         SOP = 'sop', 'SOP'
 
-    id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
     content = models.TextField()
     embedding = VectorField(dimensions=768)
@@ -151,34 +164,35 @@ class AgentMemory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Memory for {self.agent.name} - {self.type}"
+        return f"Memory for {self.agent.name}"
+
 
 class CorporateMemory(models.Model):
-    """
-    전사적 지식 저장소 (Wiki / SOP / Best Practices)
-    특정 에이전트에 종속되지 않으며, 모든 에이전트가 검색 가능함.
-    """
-    id = models.AutoField(primary_key=True)
-    subject = models.CharField(max_length=255) # 지식의 주제 또는 제목
-    content = models.TextField() # 지식의 본문 (요약된 내용)
-    embedding = VectorField(dimensions=768) # nomic-embed-text 등과 호환
-    
-    # 출처 추적용 (어떤 태스크에서 파생된 지식인지)
+    """전사적 지식 저장소"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memories')
+    subject = models.CharField(max_length=255)
+    content = models.TextField()
+    embedding = VectorField(dimensions=768)
     source_task = models.ForeignKey('Task', on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"[Wiki] {self.subject}"
 
+
 class Channel(models.Model):
-    name = models.CharField(max_length=50, unique=True) # 예: #general, #dev_team
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
+
 class ChannelMessage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(Agent, on_delete=models.CASCADE)
     content = models.TextField()
@@ -187,10 +201,11 @@ class ChannelMessage(models.Model):
     def __str__(self):
         return f"[{self.channel.name}] {self.sender.name}: {self.content[:20]}"
 
+
 class Announcement(models.Model):
-    """CEO의 전사 공지사항 (Broadcast)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     content = models.TextField()
-    is_active = models.BooleanField(default=True) # 활성화된 공지만 프롬프트에 주입
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -147,6 +147,7 @@ class Command(BaseCommand):
                         try:
                             # 간단히 제목과 결과를 저장 (추후 LLM으로 요약하게 고도화 가능)
                             kms_service.add_knowledge(
+                                owner=task.assignee.owner,
                                 subject=f"Result of: {task.title}",
                                 content=task.result,
                                 source_task_id=task.id
