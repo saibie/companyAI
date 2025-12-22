@@ -23,7 +23,7 @@
                 <input type="text" name="role" placeholder="Agent Role" required style="width:100%; margin-bottom:10px; padding:8px;">
                 <select name="manager" style="width:100%; margin-bottom:10px; padding:8px;">
                     <option value="">-- No Manager (Direct Report to You) --</option>
-                    {% for agent in all_my_agents %}
+                    {% for agent in agents %}
                         <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
                     {% endfor %}
                 </select>

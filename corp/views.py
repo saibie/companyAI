@@ -9,7 +9,7 @@ import requests
 
 class DashboardView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, *args, **kwargs):
-        agents = Agent.objects.filter(owner=request.user).order_by('name')
+        agents = Agent.objects.filter(owner=request.user, manager__isnull=True).order_by('name')
         
         visible_filter = Q(assignee__owner=request.user) & Q(creator__isnull=True)
         
