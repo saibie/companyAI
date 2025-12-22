@@ -10,6 +10,9 @@ class Agent(models.Model):
     
     # 계층 구조 (Manager 삭제 시 DB에선 NULL로 두되, 로직으로 처리)
     manager = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinates')
+    depth = models.IntegerField(default=0) # CEO=0, 직속=1, 그 아래=2 ...
+    can_hire = models.BooleanField(default=False) # 고용 권한
+    can_fire = models.BooleanField(default=False) # 해고 권한
     
     ollama_model_name = models.CharField(max_length=255, null=True, blank=True)
     context_window_size = models.IntegerField(null=True, blank=True)
@@ -18,16 +21,38 @@ class Agent(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        # 저장 전 Depth 자동 계산
+        if self.manager:
+            self.depth = self.manager.depth + 1
+        else:
+            self.depth = 0
+        super().save(*args, **kwargs)
 
-    def create_sub_agent(self, name, role, ollama_model_name=None, context_window_size=None):
+    def create_sub_agent(self, name, role, ollama_model_name=None, context_window_size=None, can_hire=False, can_fire=False):
         return Agent.objects.create(
             name=name,
             role=role,
             manager=self,
             ollama_model_name=ollama_model_name,
             context_window_size=context_window_size,
+            can_hire=can_hire, # 권한 부여
+            can_fire=can_fire,
             config={}
         )
+    
+    def is_descendant_of(self, potential_ancestor):
+        """
+        자신이 potential_ancestor의 하위 조직(손자, 증손자 포함)에 속하는지 확인합니다.
+        (직권 해고 시 권한 확인용)
+        """
+        current = self.manager
+        while current:
+            if current == potential_ancestor:
+                return True
+            current = current.manager
+        return False
 
     def delete(self, *args, **kwargs):
         """

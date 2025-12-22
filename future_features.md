@@ -1,5 +1,5 @@
 # 🚀 Future Feature Requirements: AI Company Operation System
-**Version:** 1.1 (Updated)
+**Version:** 1.2 (Updated)
 **Context:** Local Hierarchical AI Corp (Django + Ollama + LangGraph)
 
 본 문서는 현재의 '지휘 통제(Command & Control)' 중심 MVP 모델을 넘어, 실제 기업처럼 유기적이고 지속 가능한 운영이 가능한 시스템으로 발전시키기 위한 필수 기능 명세입니다.
@@ -13,8 +13,8 @@
 * **개요:** 퇴사(삭제)와 무관하게 유지되는 중앙 벡터 저장소입니다.
 * **구현 내용:**
     * `CorporateMemory` 모델 신설.
-    * 태스크 완료(`DONE`) 시 결과물 자동 아카이빙.
-    * `search_wiki` 도구를 통한 선행 지식 검색.
+    * 태스크 완료(`DONE`) 시 결과물 자동 아카이빙 및 벡터화.
+    * `search_wiki` 도구를 통한 작업 착수 전 선행 지식 검색.
 
 ### B. 에러 로그 및 트러블슈팅 DB (완료)
 * **개요:** 실패 사례를 공유하여 동일한 실수 반복을 방지합니다.
@@ -35,21 +35,28 @@
 ### B. 전사 공지 (Broadcast System) (완료)
 * **개요:** CEO가 전체 에이전트에게 정책 변경이나 긴급 지시를 내립니다.
 * **구현 내용:**
-    * `Announcement` 모델 및 시스템 프롬프트 주입 로직 구현.
+    * `Announcement` 모델 및 시스템 프롬프트(System Prompt) 동적 주입 로직 구현.
 
 ---
 
-## 3. 인사 및 권한 관리 (HR & Authority Management) 🚧 [In Progress]
+## 3. 인사 및 권한 관리 (HR & Authority Management) ✅ [Implemented]
 **목표:** 무분별한 에이전트 증식을 막고, 체계적인 위임 전결 규정을 수립합니다.
 
 ### A. 계층적 고용 통제 (Hierarchical Hiring Control)
 * **개요:** 조직의 깊이(Depth)와 권한을 제어합니다.
-* **구현 상세:**
-    * **Depth Limit:** 최대 계층 깊이($N$-Depth)를 설정하여, 그 이상 하위 조직 생성을 차단합니다.
-    * **Permission System:** `can_hire`, `can_fire` 권한 필드를 도입합니다. 상위 에이전트는 하위 에이전트 생성 시 이 권한을 위임할지 결정할 수 있습니다.
+* **구현 내용:**
+    * **Depth Limit:** `MAX_AGENT_DEPTH`(예: 5)를 설정하여, 그 이상 하위 조직 생성을 차단.
+    * **Permission System:** `can_hire`, `can_fire` 권한 필드 도입. 상위 에이전트가 하위 에이전트 생성 시 권한 위임 여부 결정.
 
-### B. (보류) 정량적 성과 지표 (KPIs)
-* *Note: 동일한 LLM 모델을 사용하는 환경 특성상, 모델 간 성능 비교보다는 권한 관리에 집중하기로 변경됨.*
+### B. 직권 해고 (Skip-Level Firing)
+* **개요:** 상위 관리자가 직속 부하뿐만 아니라, 자신의 하위 라인(Descendant)에 속한 모든 에이전트를 해고할 수 있습니다.
+* **구현 내용:**
+    * `is_descendant_of` 로직을 통해 하위 조직 검증.
+    * 중간 관리자 해고 시, 그 하위 조직은 해체되지 않고 해고자의 직속 상관(Grandparent)에게 자동 승계(Adoption)됨.
+    * *Note: '연좌제(팀 전체 해체)' 기능은 데이터 안전 및 자산 보호를 위해 제외됨.*
+
+### C. (보류) 정량적 성과 지표 (KPIs)
+* *Note: 동일한 LLM 모델 환경에서 단순 수치 비교의 실효성 문제로 인해, 권한 관리(Authority Management) 중심으로 방향 전환됨.*
 
 ---
 

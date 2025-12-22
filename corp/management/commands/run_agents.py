@@ -17,13 +17,30 @@ from langchain_core.tools import tool
 # ai_core.tools와 corp.services를 합쳐서 LangGraph에 전달할 도구 목록 생성
 # `tool` 데코레이터를 사용하여 Django ORM을 사용하는 함수를 LangChain 도구로 변환
 @tool
-def create_sub_agent_tool(manager_name: str, name: str, role: str) -> str:
-    """Creates a new subordinate agent (Hiring)."""
-    return agent_service.create_sub_agent(manager_name, name, role)
+def create_sub_agent_tool(manager_name: str, name: str, role: str, grant_hire: bool = False, grant_fire: bool = False) -> str:
+    """
+    Creates a new subordinate agent (Hiring).
+    Args:
+        manager_name: Your name.
+        name: Name of the new agent.
+        role: Role of the new agent.
+        grant_hire: (Optional) Set True to allow this new agent to hire their own subordinates later.
+        grant_fire: (Optional) Set True to allow this new agent to fire their subordinates.
+    """
+    # 서비스 호출 시 새로운 인자 전달
+    return agent_service.create_sub_agent(manager_name, name, role, grant_hire, grant_fire)
 
 @tool
 def fire_sub_agent_tool(manager_name: str, target_name: str, reason: str) -> str:
-    """Fires a subordinate agent."""
+    """
+    Fires a subordinate agent. You can fire your direct reports OR any agent below them (skip-level firing).
+    The fired agent's team is NOT dissolved; they are reassigned to the fired agent's manager.
+    
+    Args:
+        manager_name: Your name.
+        target_name: The name of the agent to fire (must be in your hierarchy).
+        reason: Reason for firing.
+    """
     return agent_service.fire_sub_agent(manager_name, target_name, reason)
 
 @tool

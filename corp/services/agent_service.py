@@ -1,24 +1,50 @@
 from corp.models import Agent, Task
+from django.conf import settings
 
-def create_sub_agent(manager_name: str, name: str, role: str) -> str:
+MAX_AGENT_DEPTH = 5
+
+def create_sub_agent(manager_name: str, name: str, role: str, grant_hire: bool = False, grant_fire: bool = False) -> str:
     """
-    Creates a new subordinate agent (Hiring).
+    Creates a new subordinate agent with permission checks.
     Args:
-        manager_name: The name of the agent calling this tool (YOUR name).
-        name: The name of the new agent to hire.
-        role: The role/job title of the new agent.
+        manager_name: Calling agent's name.
+        name: New agent's name.
+        role: New agent's role.
+        grant_hire: Whether to give the new agent hiring permission.
+        grant_fire: Whether to give the new agent firing permission.
     """
-    print(f"👥 [Service] Creating agent: {name} under {manager_name}")
+    print(f"👥 [Service] Hiring Request: {name} (under {manager_name})")
+    
     try:
-        # 1. 매니저(나) 찾기
         manager = Agent.objects.filter(name=manager_name).first()
         if not manager:
-            return f"Error: Manager agent '{manager_name}' not found. Cannot create sub-agent."
+            return f"Error: Manager '{manager_name}' not found."
 
-        # 2. 하위 에이전트 생성 (Django ORM 사용)
-        # create_sub_agent 메서드는 models.py에 정의되어 있다고 가정
-        new_agent = manager.create_sub_agent(name=name, role=role)
-        return f"Success: Hired {new_agent.name} ({new_agent.role}) as a subordinate of {manager.name}."
+        # 1. [Check] 고용 권한이 있는가?
+        if not manager.can_hire and manager.manager is not None: 
+            # CEO(manager is None)는 무조건 가능하다고 가정하거나, DB 초기 데이터에서 CEO에게 True를 줘야 함.
+            # 여기서는 안전하게 '상사가 있는데 can_hire가 없으면 거부' 로직
+            return f"⛔ Permission Denied: You ({manager_name}) do not have 'HIRING' permission."
+
+        # 2. [Check] 조직 깊이 제한 (Depth Limit)
+        if manager.depth >= MAX_AGENT_DEPTH:
+            return f"⛔ Organization Limit Reached: Cannot hire more levels down (Max Depth: {MAX_AGENT_DEPTH})."
+
+        # 3. 하위 에이전트 생성 (권한 위임 포함)
+        new_agent = manager.create_sub_agent(
+            name=name, 
+            role=role,
+            can_hire=grant_hire,
+            can_fire=grant_fire
+        )
+        
+        permission_info = []
+        if grant_hire: permission_info.append("HIRING")
+        if grant_fire: permission_info.append("FIRING")
+        perm_str = ", ".join(permission_info) if permission_info else "No special permissions"
+
+        return f"✅ Success: Hired {new_agent.name}. Permissions granted: [{perm_str}]."
+
     except Exception as e:
         return f"Error creating agent: {str(e)}"
 
@@ -37,15 +63,16 @@ def fire_sub_agent(manager_name: str, target_name: str, reason: str) -> str:
     print(f"🔥 [Service] Attempting to fire: '{target_name}' by '{manager_name}'")
     
     try:
-        # 1. 권한 확인
         manager = Agent.objects.filter(name=manager_name).first()
         if not manager:
-            msg = f"Error: Manager '{manager_name}' not found."
-            print(f"❌ [Service Error] {msg}") # [추가] 에러 로그 출력
-            return msg
+            return f"Error: Manager '{manager_name}' not found."
+            
+        # 1. [Check] 해고 권한이 있는가?
+        if not manager.can_fire and manager.manager is not None:
+             return f"⛔ Permission Denied: You ({manager_name}) do not have 'FIRING' permission."
 
         # 2. 대상 찾기 (자신의 직속 부하만)
-        target = Agent.objects.filter(name=target_name, manager=manager).first()
+        target = Agent.objects.filter(name=target_name).first()
         
         if not target:
             # 디버깅을 위해 현재 부하 직원 명단을 로그에 남김
@@ -54,7 +81,11 @@ def fire_sub_agent(manager_name: str, target_name: str, reason: str) -> str:
             print(f"❌ [Service Error] {msg}") # [추가] 에러 로그 출력
             return msg
 
-        # 3. 해고 실행
+        # 3. [관계 체크] 직속이거나, 혹은 내 하위 조직(손자/증손자)인지 확인
+        if target.manager != manager and not target.is_descendant_of(manager):
+            return f"⛔ Access Denied: Agent '{target_name}' is not in your command chain."
+        
+        # 4. 해고 실행
         target.delete()
         success_msg = f"Success: Fired '{target_name}'. Reason: {reason}"
         print(f"✅ [Service Success] {success_msg}") # [추가] 성공 로그 출력
