@@ -95,6 +95,7 @@ class Task(models.Model):
         THINKING = 'THINKING', 'Thinking'
         WAIT_SUBTASK = 'WAIT_SUBTASK', 'Waiting for Subtasks'
         WAIT_APPROVAL = 'WAIT_APPROVAL', 'Wait Approval'
+        WAIT_ANSWER = 'WAIT_ANSWER', 'Waiting for Answer'
         APPROVED = 'APPROVED', 'Approved'
         DONE = 'DONE', 'Done'
         REJECTED = 'REJECTED', 'Rejected'

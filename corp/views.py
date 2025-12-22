@@ -7,8 +7,13 @@ import requests
 class DashboardView(View):
     def get(self, request, *args, **kwargs):
         agents = Agent.objects.filter(manager__isnull=True).order_by('name')
-        tasks = Task.objects.filter(
+        approval_tasks = Task.objects.filter(
             status=Task.TaskStatus.WAIT_APPROVAL, 
+            assignee__manager__isnull=True
+        ).order_by('-id')
+        
+        question_tasks = Task.objects.filter(
+            status=Task.TaskStatus.WAIT_ANSWER,
             assignee__manager__isnull=True
         ).order_by('-id')
         
@@ -24,8 +29,8 @@ class DashboardView(View):
 
         context = {
             'agents': agents,
-            'tasks': tasks,
-            'ollama_status': ollama_status,
+            'approval_tasks': approval_tasks, # 변수명 변경 (tasks -> approval_tasks)
+            'question_tasks': question_tasks, # [New]'ollama_status': ollama_status,
             'ollama_models': ollama_models,
             'agent_queue_status': 'Idle',
         }
@@ -67,6 +72,32 @@ class DashboardView(View):
                 tasks = Task.objects.filter(status=Task.TaskStatus.WAIT_APPROVAL).order_by('-id')
                 return render(request, 'corp/partials/task_list.html', {'tasks': tasks})
 
+        elif action == 'reply_question':
+            task_id = request.POST.get('task_id')
+            answer = request.POST.get('answer') # 답변 내용
+            
+            task = get_object_or_404(Task, id=task_id)
+            
+            # 답변을 로그에 저장 (에이전트가 히스토리로 볼 수 있게)
+            # result=질문, feedback=답변 형태로 저장하면 에이전트 프롬프트에 자연스럽게 들어감
+            from .models import TaskLog
+            TaskLog.objects.create(
+                task=task,
+                result=task.result,  # 질문 내용
+                feedback=f"[Manager's Answer] {answer}", # 답변 내용
+                status='ANSWERED'
+            )
+
+            # 상태를 다시 THINKING으로 변경하여 에이전트 깨우기
+            task.status = Task.TaskStatus.THINKING
+            task.feedback = answer # 최신 피드백 필드에도 업데이트
+            task.save()
+            
+            if request.htmx:
+                 # 질문 목록 갱신
+                question_tasks = Task.objects.filter(status=Task.TaskStatus.WAIT_ANSWER, assignee__manager__isnull=True).order_by('-id')
+                return render(request, 'corp/partials/question_list.html', {'question_tasks': question_tasks})
+        
         elif action == 'reject_task':
             task_id = request.POST.get('task_id')
             feedback = request.POST.get('feedback')

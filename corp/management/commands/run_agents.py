@@ -4,7 +4,9 @@ from ai_core.workflow import create_agent_workflow, create_review_workflow, Agen
 from ai_core.tools.web_search import search_web
 from ai_core.tools.org_tools import create_plan
 from ai_core.tools.kms_tools import search_wiki_tool
-from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool
+from ai_core.tools.math_tools import calculator_tool
+from ai_core.tools.web_search import search_web, fetch_web_content_tool
+from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool, ask_manager_tool
 from corp.services import agent_service, kms_service
 import time
 from datetime import datetime
@@ -52,6 +54,9 @@ def assign_task_tool(manager_name: str, assignee_name: str, title: str, descript
 
 BASE_TOOLS = [
     search_web, 
+    fetch_web_content_tool,
+    calculator_tool,
+    ask_manager_tool,
     create_plan, 
     assign_task_tool, 
     search_wiki_tool,
@@ -246,4 +251,43 @@ class Command(BaseCommand):
                     parent_task.status = Task.TaskStatus.THINKING
                     parent_task.save()
 
+            # ==================================================================
+            # [NEW] Case D: Escalation (질문 -> 상사의 업무로 변환)
+            # ==================================================================
+            # 상사가 있는 에이전트가 질문(WAIT_ANSWER)을 했는데,
+            # 아직 상사한테 "답변해달라"는 태스크가 안 만들어진 경우를 찾음.
+            
+            pending_questions = Task.objects.filter(
+                status=Task.TaskStatus.WAIT_ANSWER,
+                assignee__manager__isnull=False
+            )
+
+            for q_task in pending_questions:
+                manager = q_task.assignee.manager
+                
+                # 이미 이 질문에 대해 상사가 작업 중인 태스크가 있는지 확인 (중복 생성 방지)
+                # (단순하게 제목에 Task ID를 포함시켜서 구분)
+                existing_manager_task = Task.objects.filter(
+                    assignee=manager,
+                    description__contains=f"Target Task ID: {q_task.id}"
+                ).exists()
+
+                if not existing_manager_task:
+                    # 상사에게 새로운 업무 할당
+                    Task.objects.create(
+                        title=f"Help Subordinate: {q_task.assignee.name}",
+                        description=(
+                            f"Your subordinate '{q_task.assignee.name}' has asked a question.\n"
+                            f"[Question]: {q_task.result}\n\n"
+                            f"Action Required:\n"
+                            f"1. Analyze the question (use tools if needed).\n"
+                            f"2. Use 'reply_to_subordinate_tool' to send the answer.\n"
+                            f"3. Target Task ID: {q_task.id}"
+                        ),
+                        assignee=manager,
+                        creator=q_task.assignee, # 발의자는 부하직원
+                        status=Task.TaskStatus.THINKING # 상사를 깨움
+                    )
+                    self.stdout.write(self.style.WARNING(f"🔔 Question from {q_task.assignee.name} escalated to Manager {manager.name}."))
+            
             time.sleep(5)

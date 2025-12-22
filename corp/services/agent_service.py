@@ -1,4 +1,4 @@
-from corp.models import Agent, Task
+from corp.models import Agent, Task, TaskLog
 from django.conf import settings
 
 MAX_AGENT_DEPTH = 5
@@ -134,3 +134,53 @@ def assign_task(manager_name: str, assignee_name: str, title: str, description: 
         return f"Success: Task assigned to {assignee_name}. I am now waiting for their report."
     except Exception as e:
         return f"Error assigning task: {str(e)}"
+
+def ask_manager(agent_name: str, current_task_id: int, question: str) -> str:
+    """에이전트가 매니저(사용자)에게 질문을 던지고 결재(답변)를 기다리게 합니다."""
+    try:
+        task = Task.objects.get(id=current_task_id)
+        
+        # 질문 내용을 결과물(Result) 필드에 임시 저장하고 '질문' 태그를 붙임
+        task.result = f"[❓ QUESTION to Manager]\n{question}"
+        
+        # 상태를 결재 대기(WAIT_APPROVAL)로 변경하여 대시보드에 노출시킴
+        task.status = Task.TaskStatus.WAIT_ANSWER
+        task.save()
+        
+        return "Success: Question sent to manager. Waiting for feedback."
+    except Task.DoesNotExist:
+        return "Error: Task not found."
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+def reply_to_subordinate(manager_name: str, subordinate_task_id: int, answer: str) -> str:
+    """
+    상급자가 부하의 질문(또는 태스크)에 대해 답변/피드백을 주고, 부하를 다시 일하게 만듭니다.
+    """
+    try:
+        # 1. 권한 및 관계 확인
+        manager = Agent.objects.get(name=manager_name)
+        sub_task = Task.objects.get(id=subordinate_task_id)
+        subordinate = sub_task.assignee
+        
+        # 매니저의 직속 부하인지, 혹은 하위 조직인지 체크
+        if subordinate.manager != manager and not subordinate.is_descendant_of(manager):
+            return "Error: You can only reply to your own subordinates."
+
+        # 2. 답변 로깅 (TaskLog)
+        TaskLog.objects.create(
+            task=sub_task,
+            result=sub_task.result, # 질문 내용
+            feedback=f"[Manager's Answer] {answer}",
+            status='ANSWERED'
+        )
+
+        # 3. 부하 깨우기
+        sub_task.feedback = f"[Manager Answered]: {answer}"
+        sub_task.status = Task.TaskStatus.THINKING
+        sub_task.save()
+        
+        return f"Success: Sent answer to {subordinate.name}. They are back to work."
+
+    except Exception as e:
+        return f"Error: {str(e)}"
