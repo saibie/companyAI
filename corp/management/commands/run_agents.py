@@ -3,7 +3,9 @@ from corp.models import Task, Agent, TaskLog
 from ai_core.workflow import create_agent_workflow, create_review_workflow, AgentState, ReviewState
 from ai_core.tools.web_search import search_web
 from ai_core.tools.org_tools import create_plan
-from corp.services import agent_service
+from ai_core.tools.kms_tools import search_wiki_tool
+from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool
+from corp.services import agent_service, kms_service
 import time
 from langgraph.errors import GraphRecursionError
 from langchain_core.tools import tool
@@ -29,7 +31,16 @@ def assign_task_tool(manager_name: str, assignee_name: str, title: str, descript
     """Assigns a task to a subordinate."""
     return agent_service.assign_task(manager_name, assignee_name, title, description, current_task_id)
 
-TOOLS = [search_web, create_plan, create_sub_agent_tool, fire_sub_agent_tool, assign_task_tool]
+TOOLS = [
+    search_web, 
+    create_plan, 
+    create_sub_agent_tool, 
+    fire_sub_agent_tool, 
+    assign_task_tool, 
+    search_wiki_tool,
+    post_to_channel_tool,
+    read_channel_tool
+]
 
 class Command(BaseCommand):
     help = 'Runs the AI agents loop.'
@@ -100,6 +111,18 @@ class Command(BaseCommand):
                         # 승인받은 후 실행까지 마쳤으면 -> DONE
                         task.status = Task.TaskStatus.DONE
                         self.stdout.write(self.style.SUCCESS(f"✅ Task '{task.title}' COMPLETED (Executed)."))
+                        
+                        # [추가] 2. 성공한 태스크 지식 자산화 (Auto-Archiving)
+                        try:
+                            # 간단히 제목과 결과를 저장 (추후 LLM으로 요약하게 고도화 가능)
+                            kms_service.add_knowledge(
+                                subject=f"Result of: {task.title}",
+                                content=task.result,
+                                source_task_id=task.id
+                            )
+                            self.stdout.write(self.style.SUCCESS(f"   ↳ 💾 Saved to Corporate Wiki."))
+                        except Exception as e:
+                            print(f"   ↳ ❌ Failed to save to Wiki: {e}")
                     else:
                         # THINKING 상태였다면 -> 결재 대기(WAIT_APPROVAL)로 보냄
                         task.status = Task.TaskStatus.WAIT_APPROVAL

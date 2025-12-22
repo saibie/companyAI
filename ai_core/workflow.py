@@ -4,6 +4,7 @@ from langchain_core.messages import BaseMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_ollama import ChatOllama
+from corp.services.comm_service import get_active_announcement
 
 GLOBAL_MODEL_NAME = os.getenv("LLM_MODEL", "qwen3:8b")
 
@@ -156,14 +157,19 @@ class AgentNodes:
             2. For safe tasks, use tools immediately.
             """
 
-        # 4. 최종 시스템 프롬프트 조립
-        system_prompt_text = f"""You are {current_agent_name}, a capable AI manager.
+        # [수정] 4. 최종 시스템 프롬프트 조립 부분
         
+        # CEO 공지사항 가져오기 (DB 조회)
+        broadcast_msg = get_active_announcement()
+        
+        system_prompt_text = f"""You are {current_agent_name}, a capable AI manager.
         [Current Task Info]
-        Task ID: {state['task_id']}  <-- VERY IMPORTANT
+        Task ID: {state['task_id']}
         Title: {state['task_title']}
         Description: {state['task_description']}
         
+        {broadcast_msg}  <-- [여기 추가됨: CEO 공지사항이 있으면 최우선 표시]
+
         [Your Team Status]
         {subordinates_text}
         

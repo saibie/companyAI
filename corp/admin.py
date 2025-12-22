@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import Agent, Task, AgentMemory, TaskLog
+from .models import CorporateMemory
+from .models import Channel, ChannelMessage, Announcement
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
@@ -28,3 +30,22 @@ class TaskLogAdmin(admin.ModelAdmin):
     list_filter = ('task',)
     search_fields = ('task__title', 'details')
     raw_id_fields = ('task',)
+
+@admin.register(CorporateMemory)
+class CorporateMemoryAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'created_at', 'source_task')
+    search_fields = ('subject', 'content')
+
+@admin.register(Channel)
+class ChannelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'created_at')
+
+@admin.register(ChannelMessage)
+class ChannelMessageAdmin(admin.ModelAdmin):
+    list_display = ('channel', 'sender', 'content', 'created_at')
+    list_filter = ('channel', 'sender')
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('content', 'is_active', 'created_at')
+    list_filter = ('is_active',)

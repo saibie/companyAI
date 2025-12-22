@@ -126,3 +126,46 @@ class AgentMemory(models.Model):
 
     def __str__(self):
         return f"Memory for {self.agent.name} - {self.type}"
+
+class CorporateMemory(models.Model):
+    """
+    전사적 지식 저장소 (Wiki / SOP / Best Practices)
+    특정 에이전트에 종속되지 않으며, 모든 에이전트가 검색 가능함.
+    """
+    id = models.AutoField(primary_key=True)
+    subject = models.CharField(max_length=255) # 지식의 주제 또는 제목
+    content = models.TextField() # 지식의 본문 (요약된 내용)
+    embedding = VectorField(dimensions=768) # nomic-embed-text 등과 호환
+    
+    # 출처 추적용 (어떤 태스크에서 파생된 지식인지)
+    source_task = models.ForeignKey('Task', on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[Wiki] {self.subject}"
+
+class Channel(models.Model):
+    name = models.CharField(max_length=50, unique=True) # 예: #general, #dev_team
+    description = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class ChannelMessage(models.Model):
+    channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(Agent, on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.channel.name}] {self.sender.name}: {self.content[:20]}"
+
+class Announcement(models.Model):
+    """CEO의 전사 공지사항 (Broadcast)"""
+    content = models.TextField()
+    is_active = models.BooleanField(default=True) # 활성화된 공지만 프롬프트에 주입
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[Broadcast] {self.content[:30]}..."
