@@ -174,9 +174,16 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.WARNING(f"⏳ Task '{task.title}' delegated. Waiting for sub-tasks..."))
                         
                     elif task.status == Task.TaskStatus.THINKING:
-                        # 도구를 썼는데도 상태가 그대로거나, 그냥 생각만 정리함 -> 기획안 제출 (결재 요청)
-                        task.status = Task.TaskStatus.WAIT_APPROVAL
-                        self.stdout.write(self.style.SUCCESS(f"📝 Task '{task.title}' sent for CEO/Manager APPROVAL."))
+                        # [수정] 여기가 핵심입니다!
+                        # 매니저가 부하직원 지원(Help Subordinate) 업무를 성공적으로 수행했다면,
+                        # '결재 대기'로 보내지 않고 즉시 '완료(DONE)' 처리합니다.
+                        if "Help Subordinate" in task.title and "Success:" in str(task.result):
+                            task.status = Task.TaskStatus.DONE
+                            self.stdout.write(self.style.SUCCESS(f"✅ Manager replied to subordinate automatically. (Task DONE)"))
+                        else:
+                            # 그 외 일반적인 기획/보고 업무는 기존대로 결재 요청(WAIT_APPROVAL) 상태로 변경
+                            task.status = Task.TaskStatus.WAIT_APPROVAL
+                            self.stdout.write(self.style.SUCCESS(f"📝 Task '{task.title}' sent for CEO/Manager APPROVAL."))
                     
                     task.save()
 

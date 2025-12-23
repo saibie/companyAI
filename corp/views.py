@@ -229,3 +229,36 @@ class WikiDetailView(LoginRequiredMixin, View):
     def get(self, request, pk, *args, **kwargs):
         memory = get_object_or_404(CorporateMemory, pk=pk, owner=request.user)
         return render(request, 'corp/wiki_detail.html', {'memory': memory})
+
+class MonitorView(LoginRequiredMixin, View):
+    def get(self, request: HttpRequest, *args, **kwargs):
+        # 1. 내 소유 에이전트의 모든 태스크 (필터링 없음)
+        # 상태별 정렬: 문제 상황(WAIT_ANSWER, THINKING 등)을 상단에 배치
+        all_tasks = Task.objects.filter(
+            assignee__owner=request.user
+        ).select_related('creator', 'assignee').order_by('status', '-created_at')
+
+        context = {
+            'tasks': all_tasks,
+        }
+        return render(request, 'corp/monitor.html', context)
+
+    def post(self, request: HttpRequest, *args, **kwargs):
+        action = request.POST.get('action')
+        task_id = request.POST.get('task_id')
+        task = get_object_or_404(Task, id=task_id, assignee__owner=request.user)
+
+        if action == 'force_done':
+            task.status = Task.TaskStatus.DONE
+            task.result = (task.result or "") + "\n[Admin]: Forced Done."
+            task.save()
+            
+        elif action == 'force_reject':
+            task.status = Task.TaskStatus.THINKING
+            task.feedback = "[Admin]: Forced Reset/Reject to retry."
+            task.save()
+            
+        elif action == 'force_delete':
+            task.delete()
+
+        return redirect('corp:monitor')
