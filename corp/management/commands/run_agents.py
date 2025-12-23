@@ -6,7 +6,7 @@ from ai_core.tools.org_tools import create_plan
 from ai_core.tools.kms_tools import search_wiki_tool
 from ai_core.tools.math_tools import calculator_tool
 from ai_core.tools.web_search import search_web, fetch_web_content_tool
-from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool, ask_manager_tool
+from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool, ask_manager_tool, reply_to_subordinate_tool
 from corp.services import agent_service, kms_service
 import time
 from datetime import datetime
@@ -61,7 +61,8 @@ BASE_TOOLS = [
     assign_task_tool, 
     search_wiki_tool,
     post_to_channel_tool,
-    read_channel_tool
+    read_channel_tool,
+    reply_to_subordinate_tool
 ]
 
 class Command(BaseCommand):
