@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpRequest
 from .models import Agent, Task, AgentMemory, TaskLog, CorporateMemory
+from ai_core.tools.registry import TIER_1_REGISTRY
 from ai_core.llm_gateway import OllamaClient
 import requests
 
@@ -62,9 +63,14 @@ class DashboardView(LoginRequiredMixin, View):
             
             manager = None
             if manager_id:
-                manager = get_object_or_404(Agent, id=manager_id, owner=request.user) # 보안: 내 에이전트만 매니저로 지정 가능
-
-            # [수정] owner=request.user 추가 (에러 해결 핵심)
+                manager = get_object_or_404(Agent, id=manager_id, owner=request.user)
+                            
+            initial_tools = []
+            if not manager:
+                # 레지스트리에 등록된 모든 Tier 1 도구의 키(Key)를 리스트로 변환
+                initial_tools = list(TIER_1_REGISTRY.keys())
+                print(f"👑 CEO Agent Created: Granting ALL tools: {initial_tools}")
+            
             Agent.objects.create(
                 owner=request.user, 
                 name=name, 
@@ -120,6 +126,18 @@ class DashboardView(LoginRequiredMixin, View):
                     
                 # 피드백에 승인 내역 기록
                 task.feedback = f"[System] CEO approved purchase of '{requested_tool}' license."
+                
+            elif task.result.startswith("REQUEST_DEV:"):
+                # [NEW] 기능 개발 요청 승인 시
+                requested_feature = task.result.split(":")[1]
+                
+                # 아직 코드가 없으므로 권한을 줄 수는 없음.
+                # 대신 개발자가 인지했음을 피드백으로 남김.
+                task.feedback = (
+                    f"[System: DEVELOPER ACKNOWLEDGEMENT]\n"
+                    f"CEO has accepted your feature request for '{requested_feature}'.\n"
+                    f"It is currently under development. Please wait for the system update."
+                )
 
             # 공통: 상태를 APPROVED로 변경 (에이전트가 알 수 있게)
             task.status = Task.TaskStatus.APPROVED
