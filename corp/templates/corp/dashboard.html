@@ -7,6 +7,14 @@
         <div class="tooltip-container">
             <strong>🔌 Ollama Status: {{ ollama_status }}</strong>
             <span class="tooltip-text">
+                <form hx-post="{% url 'corp:hx_ollama_pull' %}" hx-target="#ollama-pull-status" hx-swap="innerHTML" style="margin-top:10px;">
+                    {% csrf_token %}
+                    <input type="text" name="model_name" placeholder="Pull Model (e.g. qwen:0.5b)" style="width: 150px; padding: 4px;">
+                    <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8em;">Pull</button>
+                </form>
+                <div id="ollama-pull-status"></div>
+                
+                <hr style="border-color: #555;">
                 <strong>Available Models:</strong><br>
                 <ul style="padding-left: 15px; margin: 5px 0;">
                 {% for model in ollama_models %}
@@ -33,9 +41,8 @@
             
             <div class="panel">
                 <h3>Hire New Agent</h3>
-                <form hx-post="{% url 'corp:dashboard' %}" hx-target="#agent-list" hx-swap="innerHTML">
+                <form hx-post="{% url 'corp:hx_create_agent' %}" hx-target="#agent-list" hx-swap="innerHTML">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="create_agent">
                     <input type="text" name="name" placeholder="Agent Name" required>
                     <input type="text" name="role" placeholder="Agent Role (e.g. Python Dev)" required>
                     <select name="manager">
@@ -53,14 +60,12 @@
             <div class="panel" style="border-left: 5px solid #1890ff;">
                 <h2 style="color: #0050b3; display: flex; align-items: center; gap: 8px;">
                     🚀 Development Roadmap
-                    <span style="font-size: 0.5em; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; font-weight: normal;">
-                        Shared To-Do List
-                    </span>
                 </h2>
                 <div id="roadmap-list-container">
                     {% include 'corp/partials/roadmap_list.html' %}
                 </div>
             </div>
+
             <div class="panel">
             <h2 style="color: #6c757d;">📋 Backlog / To-Do</h2>
                 <ul class="clean-list">
@@ -94,9 +99,8 @@
 
             <div class="panel">
                 <h3>Create New Task</h3>
-                <form hx-post="{% url 'corp:dashboard' %}" hx-target="#task-list-container" hx-swap="innerHTML">
+                <form hx-post="{% url 'corp:hx_create_task' %}" hx-target="#task-list-container" hx-swap="innerHTML">
                     {% csrf_token %}
-                    <input type="hidden" name="action" value="create_task">
                     <input type="text" name="title" placeholder="Task Title" required>
                     <textarea name="description" placeholder="Task Description" required rows="3"></textarea>
                     <select name="assignee" required>

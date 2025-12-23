@@ -4,23 +4,19 @@
             <div style="font-weight: bold; color: #856404; margin-bottom: 5px;">
                 ❓ Question from {{ task.assignee.name }}
             </div>
-            <div style="font-size: 1.1em; margin-bottom: 10px;">
-                {{ task.title }}
-            </div>
+            <div style="font-size: 1.1em; margin-bottom: 10px;">{{ task.title }}</div>
             <div style="background-color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ffeeba;">
-                {{ task.result|linebreaksbr }} </div>
+                {{ task.result|linebreaksbr }} 
+            </div>
 
-            <form hx-post="{% url 'corp:dashboard' %}" 
+            <form hx-post="{% url 'corp:hx_reply_question' %}" 
                   hx-target="#question-list-container" 
                   hx-swap="innerHTML" 
                   style="display: flex; gap: 5px;">
                 {% csrf_token %}
-                <input type="hidden" name="action" value="reply_question">
                 <input type="hidden" name="task_id" value="{{ task.id }}">
-                
                 <input type="text" name="answer" placeholder="Type your answer..." required 
                        style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                
                 <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                     Reply 💬
                 </button>

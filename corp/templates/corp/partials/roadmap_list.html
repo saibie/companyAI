@@ -17,13 +17,15 @@
             {{ task.description|truncatechars:100 }}
         </div>
 
-        <form hx-post="{% url 'corp:dashboard' %}" hx-target="#roadmap-list-container" hx-swap="innerHTML" style="margin: 0; text-align: right;">
+        <form hx-post="{% url 'corp:hx_deploy_feature' %}" 
+              hx-target="#roadmap-list-container" 
+              hx-swap="innerHTML" 
+              style="margin: 0; text-align: right;">
             {% csrf_token %}
-            <input type="hidden" name="action" value="deploy_feature">
             <input type="hidden" name="task_id" value="{{ task.id }}">
             <button type="submit" 
                     style="background-color: #0050b3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85em;"
-                    title="Click this after you have implemented the code and restarted the server.">
+                    title="Click this after you have implemented the code.">
                 📦 Mark as Deployed
             </button>
         </form>

@@ -9,11 +9,9 @@
                         (Agent: {{ task.assignee.name }})
                     </span>
                 </div>
-                
                 <div style="color: #555; margin-bottom: 10px; font-size: 0.9em;">
                     <strong>Description:</strong> {{ task.description }}
                 </div>
-
                 {% if task.result %}
                 <div style="background-color: #f1f8ff; padding: 10px; border-left: 4px solid #007bff; border-radius: 4px;">
                     <strong>📝 Result:</strong><br>
@@ -27,24 +25,22 @@
             </div>
 
             <div style="display: flex; gap: 10px; align-items: center;">
-                <form hx-post="{% url 'corp:dashboard' %}" 
+                <form hx-post="{% url 'corp:hx_approve_task' %}" 
                       hx-target="#task-list-container" 
                       hx-swap="innerHTML" 
                       style="margin: 0;">
                     {% csrf_token %}
-                    <input type="hidden" name="action" value="approve_task">
                     <input type="hidden" name="task_id" value="{{ task.id }}">
                     <button type="submit" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
                         ✅ Approve
                     </button>
                 </form>
 
-                <form hx-post="{% url 'corp:dashboard' %}" 
+                <form hx-post="{% url 'corp:hx_reject_task' %}" 
                       hx-target="#task-list-container" 
                       hx-swap="innerHTML" 
                       style="margin: 0; display: flex; gap: 5px;">
                     {% csrf_token %}
-                    <input type="hidden" name="action" value="reject_task">
                     <input type="hidden" name="task_id" value="{{ task.id }}">
                     <input type="text" name="feedback" placeholder="Reason for rejection..." required 
                            style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
