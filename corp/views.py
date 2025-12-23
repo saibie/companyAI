@@ -171,6 +171,19 @@ class DashboardView(LoginRequiredMixin, View):
             if request.htmx:
                 return render(request, 'corp/partials/ollama_pull_status.html', {'pull_status_messages': pull_status_messages})
 
+        elif action == 'fire_agent':
+            agent_id = request.POST.get('agent_id')
+            # 내 소유의 에이전트인지 확인 후 삭제
+            agent = get_object_or_404(Agent, id=agent_id, owner=request.user)
+            
+            # Agent 모델의 delete() 메서드에 정의된 승계 로직(Subordinate 입양 등)이 실행됨
+            agent.delete()
+            
+            if request.htmx:
+                # 갱신된 리스트 반환
+                agents = Agent.objects.filter(owner=request.user, manager__isnull=True).order_by('name')
+                return render(request, 'corp/partials/agent_list.html', {'agents': agents})
+        
         return redirect('corp:dashboard')
 
 
@@ -191,6 +204,20 @@ class AgentDetailView(LoginRequiredMixin, View):
             'memories': memories,
         }
         return render(request, 'corp/agent_detail.html', context)
+    
+    def post(self, request, pk, *args, **kwargs):
+        """상세 페이지에서 발생하는 액션(해고 등) 처리"""
+        agent = get_object_or_404(Agent, pk=pk, owner=request.user)
+        action = request.POST.get('action')
+
+        if action == 'fire_agent':
+            # 에이전트 해고 로직 실행 (하위 조직 승계 등은 모델 delete 메서드에서 처리됨)
+            agent_name = agent.name
+            agent.delete()
+            print(f"👋 Agent {agent_name} has been fired by user.")
+            return redirect('corp:dashboard')
+            
+        return redirect('corp:agent_detail', pk=pk)
 
 class WikiListView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):

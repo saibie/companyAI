@@ -3,89 +3,100 @@
 {% block title %}Dashboard - AI Corp{% endblock %}
 
 {% block content %}
-    <div class="status-bar" style="background: #e0e0e0; padding: 10px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-around;">
-        <div class="status-item">Ollama Status: {{ ollama_status }}</div>
-        <div class="status-item">Agent Queue: {{ agent_queue_status }}</div>
-    </div>
-
-    <div style="display: flex; gap: 20px;">
-        <div class="panel" style="flex: 1;">
-            <h2>Agents</h2>
-            <div id="agent-list">
-                {% include 'corp/partials/agent_list.html' %}
-            </div>
-            
-            <form hx-post="{% url 'corp:dashboard' %}" hx-target="#agent-list" hx-swap="outerHTML">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="create_agent">
-                <h3>Create New Agent</h3>
-                <input type="text" name="name" placeholder="Agent Name" required style="width:100%; margin-bottom:10px; padding:8px;">
-                <input type="text" name="role" placeholder="Agent Role" required style="width:100%; margin-bottom:10px; padding:8px;">
-                <select name="manager" style="width:100%; margin-bottom:10px; padding:8px;">
-                    <option value="">-- No Manager (Direct Report to You) --</option>
-                    {% for agent in agents %}
-                        <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:4px;">Create Agent</button>
-            </form>
-        </div>
-
-        <div class="panel" style="flex: 2;">
-            <h2 style="color: #6c757d;">📋 Backlog / To-Do</h2>
-                <ul style="padding: 0;">
-                    {% for task in todo_tasks %}
-                    <li style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 8px; background-color: #f8f9fa; list-style: none;">
-                        <div style="display: flex; justify-content: space-between;">
-                            <strong>{{ task.title }}</strong>
-                            <span style="font-size:0.8em; color:#666;">{{ task.created_at|date:"m/d H:i" }}</span>
-                            </div>
-                        <div style="font-size: 0.9em; color: #666;">{{ task.description|truncatechars:50 }}</div>
-                        </li>
-                    {% empty %}
-                    <li style="color: #999; list-style: none;">No pending tasks.</li>
-                    {% endfor %}
-                </ul>
-            
-            <hr style="margin: 20px 0; border-top: 1px solid #eee;">
-            
-            <h2 style="color: #d39e00;">🙋‍♂️ Questions</h2>
-            <div id="question-list-container">
-                {% include 'corp/partials/question_list.html' %}
-            </div>
-
-            <hr style="margin: 20px 0; border-top: 1px solid #eee;">
-            
-            <h2>Tasks Waiting Approval</h2>
-            <div id="task-list-container">
-                {% include 'corp/partials/task_list.html' %}
-            </div>
-
-            <form hx-post="{% url 'corp:dashboard' %}" hx-target="#task-list-container" hx-swap="innerHTML" style="margin-top:20px;">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="create_task">
-                <h3>Create New Task</h3>
-                <input type="text" name="title" placeholder="Task Title" required style="width:100%; margin-bottom:10px; padding:8px;">
-                <textarea name="description" placeholder="Task Description" required style="width:100%; margin-bottom:10px; padding:8px;"></textarea>
-                <select name="assignee" required style="width:100%; margin-bottom:10px; padding:8px;">
-                    <option value="">-- Assign to Agent --</option>
-                    {% for agent in all_my_agents %}
-                        <option value="{{ agent.id }}">{{ agent.name }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit" style="padding:10px 20px; background:#28a745; color:white; border:none; border-radius:4px;">Create Task</button>
-            </form>
-        </div>
-        
-        <div class="panel" style="flex: 1;">
-            <h2>Ollama Models</h2>
-            <ul>
+    <div class="panel" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px;">
+        <div class="tooltip-container">
+            <strong>🔌 Ollama Status: {{ ollama_status }}</strong>
+            <span class="tooltip-text">
+                <strong>Available Models:</strong><br>
+                <ul style="padding-left: 15px; margin: 5px 0;">
                 {% for model in ollama_models %}
                     <li>{{ model.name }}</li>
                 {% empty %}
                     <li>No models found.</li>
                 {% endfor %}
-            </ul>
+                </ul>
+            </span>
+        </div>
+        <div>
+            <strong>🧠 Agent Queue:</strong> {{ agent_queue_status }}
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="col-left">
+            <div class="panel">
+                <h2>👥 Organizational Chart</h2>
+            <div id="agent-list">
+                {% include 'corp/partials/agent_list.html' %}
+            </div>
+            </div>
+            
+            <div class="panel">
+                <h3>Hire New Agent</h3>
+                <form hx-post="{% url 'corp:dashboard' %}" hx-target="#agent-list" hx-swap="innerHTML">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_agent">
+                    <input type="text" name="name" placeholder="Agent Name" required>
+                    <input type="text" name="role" placeholder="Agent Role (e.g. Python Dev)" required>
+                    <select name="manager">
+                    <option value="">-- No Manager (Direct Report to You) --</option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
+                    {% endfor %}
+                </select>
+                    <button type="submit" class="btn btn-primary">Hire Agent</button>
+            </form>
+        </div>
+        </div>
+
+        <div class="col-right">
+            <div class="panel">
+            <h2 style="color: #6c757d;">📋 Backlog / To-Do</h2>
+                <ul class="clean-list">
+                    {% for task in todo_tasks %}
+                    <li class="list-item" style="background-color: #f8f9fa;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>{{ task.title }}</strong>
+                            <span style="font-size:0.8em; color:#666;">{{ task.created_at|date:"m/d H:i" }}</span>
+                            </div>
+                        <div style="font-size: 0.9em; color: #666; margin-top: 5px;">{{ task.description|truncatechars:80 }}</div>
+                        </li>
+                    {% empty %}
+                    <li style="color: #999; padding: 10px;">No pending tasks.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <div class="panel" style="border-left: 5px solid #ffc107;">
+                <h2 style="color: #d39e00;">🙋‍♂️ Pending Questions</h2>
+                <div id="question-list-container">
+                    {% include 'corp/partials/question_list.html' %}
+                </div>
+            </div>
+            
+            <div class="panel" style="border-left: 5px solid #28a745;">
+                <h2>✅ Tasks Waiting Approval</h2>
+                <div id="task-list-container">
+                    {% include 'corp/partials/task_list.html' %}
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Create New Task</h3>
+                <form hx-post="{% url 'corp:dashboard' %}" hx-target="#task-list-container" hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_task">
+                    <input type="text" name="title" placeholder="Task Title" required>
+                    <textarea name="description" placeholder="Task Description" required rows="3"></textarea>
+                    <select name="assignee" required>
+                        <option value="">-- Assign to Agent --</option>
+                        {% for agent in all_my_agents %}
+                            <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-success" style="width: auto;">Create Task</button>
+                </form>
+            </div>
         </div>
     </div>
 {% endblock %}

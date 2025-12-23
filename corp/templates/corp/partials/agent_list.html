@@ -1,15 +1,18 @@
-<ul class="agent-tree" style="list-style-type: none; padding-left: 20px;">
+<ul class="agent-tree">
     {% for agent in agents %}
-        <li style="margin: 5px 0;">
-            <div style="display: flex; align-items: center; gap: 5px;">
+        <li>
+            <div class="agent-item-row">
                 <span style="font-size: 1.2em;">👤</span>
-                <a href="{% url 'corp:agent_detail' pk=agent.id %}" style="text-decoration: none; font-weight: bold; color: #333;">
+                <a href="{% url 'corp:agent_detail' pk=agent.id %}" class="agent-name">
                     {{ agent.name }}
                 </a>
-                <span style="color: #666; font-size: 0.9em;">({{ agent.role }})</span>
+                
+                <span class="role-badge" title="{{ agent.role }}">
+                    {{ agent.role }}
+                </span>
                 
                 {% if not agent.is_active %}
-                    <span style="color: red; font-size: 0.8em;">[Inactive]</span>
+                    <span style="color: red; font-size: 0.8em; white-space: nowrap;">[Inactive]</span>
                 {% endif %}
             </div>
 
@@ -19,7 +22,7 @@
         </li>
     {% empty %}
         {% if not agents %}
-            <li style="color: #999;">No agents found.</li>
+            <li style="color: #999; padding: 5px;">No agents found. Hire someone!</li>
         {% endif %}
     {% endfor %}
 </ul>

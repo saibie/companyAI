@@ -1,63 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ agent.name }} - Agent Detail</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        .container { display: flex; gap: 20px; flex-wrap: wrap; }
-        .panel { border: 1px solid #ccc; padding: 15px; border-radius: 8px; flex: 1; min-width: 300px; }
-        h1, h2 { color: #333; }
-        ul { list-style: none; padding: 0; }
-        li { background: #f9f9f9; margin-bottom: 5px; padding: 8px; border-radius: 4px; }
-        .agent-info p { margin: 5px 0; }
-        .back-link { display: block; margin-bottom: 20px; color: #007bff; text-decoration: none; }
-        .back-link:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <a href="{% url 'corp:dashboard' %}" class="back-link">&larr; Back to Dashboard</a>
-    <h1>{{ agent.name }} ({{ agent.role }})</h1>
+{% extends 'corp/base.html' %}
 
-    <div class="agent-info">
-        <p><strong>Manager:</strong> {% if agent.manager %}{{ agent.manager.name }}{% else %}CEO{% endif %}</p>
-        <p><strong>Status:</strong> {% if agent.is_active %}Active{% else %}Inactive{% endif %}</p>
+{% block title %}{{ agent.name }} - Detail{% endblock %}
+
+{% block content %}
+    <a href="{% url 'corp:dashboard' %}" style="display:inline-block; margin-bottom:15px; text-decoration:none; color:#666;">
+        &larr; Back to Dashboard
+    </a>
+
+    <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1>{{ agent.name }}</h1>
+            <span class="role-badge" style="font-size: 1em; max-width: none;">{{ agent.role }}</span>
+        </div>
+
+        <div style="margin-top: 10px; color: #555;">
+            <p><strong>Manager:</strong> {% if agent.manager %}{{ agent.manager.name }}{% else %}CEO (You){% endif %}</p>
+            <p><strong>Status:</strong> {% if agent.is_active %}<span style="color:green">Active</span>{% else %}<span style="color:red">Inactive</span>{% endif %}</p>
+            <p><strong>Permissions:</strong> 
+                {% if agent.can_hire %}Hire{% endif %} 
+                {% if agent.can_fire %}Fire{% endif %}
+                {% if not agent.can_hire and not agent.can_fire %}None{% endif %}
+            </p>
+        </div>
     </div>
 
-    <div class="container">
-        <div class="panel">
-            <h2>Tasks Created</h2>
+    <div class="dashboard-grid">
+        <div class="panel" style="flex:1;">
+            <h3>📝 Tasks Created</h3>
             <ul>
                 {% for task in created_tasks %}
-                    <li>{{ task.title }} (Status: {{ task.status }})</li>
+                    <li>{{ task.title }} ({{ task.status }})</li>
                 {% empty %}
-                    <li>No tasks created by this agent.</li>
+                    <li style="color:#999">No tasks created.</li>
                 {% endfor %}
             </ul>
         </div>
 
-        <div class="panel">
-            <h2>Tasks Assigned</h2>
+        <div class="panel" style="flex:1;">
+            <h3>📥 Tasks Assigned</h3>
             <ul>
                 {% for task in assigned_tasks %}
-                    <li>{{ task.title }} (Status: {{ task.status }})</li>
+                    <li>{{ task.title }} ({{ task.status }})</li>
                 {% empty %}
-                    <li>No tasks assigned to this agent.</li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <div class="panel">
-            <h2>Memories</h2>
-            <ul>
-                {% for memory in memories %}
-                    <li><strong>{{ memory.type|capfirst }}:</strong> {{ memory.content|truncatechars:100 }} ({{ memory.created_at|date:"Y-m-d H:i" }})</li>
-                {% empty %}
-                    <li>No memories for this agent.</li>
+                    <li style="color:#999">No tasks assigned.</li>
                 {% endfor %}
             </ul>
         </div>
     </div>
-</body>
-</html>
+
+        <div class="panel">
+        <h3>🧠 Memories</h3>
+            <ul>
+                {% for memory in memories %}
+                <li style="margin-bottom: 5px;">
+                    <strong>{{ memory.type|capfirst }}:</strong> {{ memory.content|truncatechars:100 }} 
+                    <span style="color:#999; font-size:0.8em;">({{ memory.created_at|date:"Y-m-d" }})</span>
+                </li>
+                {% empty %}
+                <li style="color:#999">No memories yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    {% if agent.is_active %}
+    <div class="panel" style="border: 1px solid #ffcccc; background-color: #fff5f5;">
+        <h3 style="color: #dc3545; margin-top:0;">⚠️ Danger Zone</h3>
+        <p style="font-size: 0.9em; color: #666;">
+            Firing this agent will transfer all their subordinates to their manager (or you). This action cannot be easily undone.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="fire_agent">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you absolutely sure you want to fire {{ agent.name }}?');">
+                🔥 Fire {{ agent.name }}
+            </button>
+        </form>
+    </div>
+    {% endif %}
+
+{% endblock %}
