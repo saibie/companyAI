@@ -23,7 +23,7 @@ def read_channel_tool(channel_name: str) -> str:
     return comm_service.read_channel(channel_name)
 
 @tool
-def ask_manager_tool(agent_name: str, current_task_id: int, question: str) -> str:
+def ask_manager_tool(agent_name: str, current_task_id: str, question: str) -> str:
     """
     Ask your manager (human) a question when instructions are ambiguous.
     Your status will change to WAIT_APPROVAL until the manager responds.
@@ -35,7 +35,7 @@ def ask_manager_tool(agent_name: str, current_task_id: int, question: str) -> st
     return agent_service.ask_manager(agent_name, current_task_id, question)
 
 @tool
-def reply_to_subordinate_tool(manager_name: str, subordinate_task_id: int, answer: str) -> str:
+def reply_to_subordinate_tool(manager_name: str, subordinate_task_id: str, answer: str) -> str:
     """
     Reply to a subordinate's question.
     This will send your answer to the subordinate and wake them up to continue working.

@@ -96,7 +96,7 @@ def fire_sub_agent(manager_name: str, target_name: str, reason: str) -> str:
         print(f"❌ [Service Exception] {error_msg}") # [추가] 예외 로그 출력
         return error_msg
 
-def assign_task(manager_name: str, assignee_name: str, title: str, description: str, current_task_id: int) -> str:
+def assign_task(manager_name: str, assignee_name: str, title: str, description: str, current_task_id: str) -> str:
     """
     Assigns a task to a subordinate.
     Args:
@@ -135,7 +135,7 @@ def assign_task(manager_name: str, assignee_name: str, title: str, description: 
     except Exception as e:
         return f"Error assigning task: {str(e)}"
 
-def ask_manager(agent_name: str, current_task_id: int, question: str) -> str:
+def ask_manager(agent_name: str, current_task_id: str, question: str) -> str:
     """에이전트가 매니저(사용자)에게 질문을 던지고 결재(답변)를 기다리게 합니다."""
     try:
         task = Task.objects.get(id=current_task_id)
@@ -153,7 +153,7 @@ def ask_manager(agent_name: str, current_task_id: int, question: str) -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
-def reply_to_subordinate(manager_name: str, subordinate_task_id: int, answer: str) -> str:
+def reply_to_subordinate(manager_name: str, subordinate_task_id: str, answer: str) -> str:
     """
     상급자가 부하의 질문(또는 태스크)에 대해 답변/피드백을 주고, 부하를 다시 일하게 만듭니다.
     """

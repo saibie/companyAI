@@ -48,7 +48,7 @@ def fire_sub_agent_tool(manager_name: str, target_name: str, reason: str) -> str
     return agent_service.fire_sub_agent(manager_name, target_name, reason)
 
 @tool
-def assign_task_tool(manager_name: str, assignee_name: str, title: str, description: str, current_task_id: int) -> str:
+def assign_task_tool(manager_name: str, assignee_name: str, title: str, description: str, current_task_id: str) -> str:
     """Assigns a task to a subordinate."""
     return agent_service.assign_task(manager_name, assignee_name, title, description, current_task_id)
 
@@ -139,22 +139,34 @@ class Command(BaseCommand):
                     task.result = final_response
                     
                     if task.status == Task.TaskStatus.APPROVED:
-                        # 승인받은 후 실행까지 마쳤으면 -> DONE
-                        task.status = Task.TaskStatus.DONE
-                        self.stdout.write(self.style.SUCCESS(f"✅ Task '{task.title}' COMPLETED (Executed)."))
-                        
-                        # [추가] 2. 성공한 태스크 지식 자산화 (Auto-Archiving)
+                        # [변경] 위키 저장 성공 여부에 따라 상태 결정
+                        wiki_saved = False
                         try:
-                            # 간단히 제목과 결과를 저장 (추후 LLM으로 요약하게 고도화 가능)
-                            kms_service.add_knowledge(
+                            # 2. 성공한 태스크 지식 자산화 (Auto-Archiving)
+                            saved_memory = kms_service.add_knowledge(
                                 owner=task.assignee.owner,
                                 subject=f"Result of: {task.title}",
                                 content=task.result,
                                 source_task_id=task.id
                             )
-                            self.stdout.write(self.style.SUCCESS(f"   ↳ 💾 Saved to Corporate Wiki."))
+                            
+                            if saved_memory:
+                                self.stdout.write(self.style.SUCCESS(f"   ↳ 💾 Saved to Corporate Wiki."))
+                                wiki_saved = True
+                            else:
+                                # None이 반환되면 (모델 다운로드 실패 등) 저장이 안 된 것임
+                                self.stdout.write(self.style.ERROR(f"   ↳ ❌ Failed to save to Wiki. Task remains APPROVED to retry."))
+                                
                         except Exception as e:
-                            print(f"   ↳ ❌ Failed to save to Wiki: {e}")
+                            self.stdout.write(self.style.ERROR(f"   ↳ ❌ Error saving to Wiki: {e}"))
+                        
+                        # [핵심] 위키 저장이 성공했을 때만 DONE으로 변경
+                        if wiki_saved:
+                            task.status = Task.TaskStatus.DONE
+                            self.stdout.write(self.style.SUCCESS(f"✅ Task '{task.title}' COMPLETED."))
+                        else:
+                            # 실패 시 상태를 APPROVED로 유지 (다음 루프에서 재시도하게 됨)
+                            pass
                     
                     elif task.status == Task.TaskStatus.WAIT_SUBTASK:
                         # [핵심 수정] 도구(assign_task)가 이미 상태를 바꿨음 -> 건드리지 않고 대기
