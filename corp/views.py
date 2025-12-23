@@ -103,12 +103,30 @@ class DashboardView(LoginRequiredMixin, View):
 
         elif action == 'approve_task':
             task_id = request.POST.get('task_id')
-            # [보안] 내 에이전트의 태스크만 승인 가능
             task = get_object_or_404(Task, id=task_id, assignee__owner=request.user)
+            
+            # [NEW] 도구 사용 요청인지 확인 (System Tool이 심어둔 마커 확인)
+            if task.result and task.result.startswith("REQUEST_TOOL:"):
+                requested_tool = task.result.split(":")[1].strip()
+                agent = task.assignee
+                
+                # 중복 확인 후 권한 추가
+                current_tools = agent.allowed_tools or []
+                if requested_tool not in current_tools:
+                    current_tools.append(requested_tool)
+                    agent.allowed_tools = current_tools
+                    agent.save()
+                    print(f"🔓 [Access Granted] {agent.name} -> {requested_tool}")
+                    
+                # 피드백에 승인 내역 기록
+                task.feedback = f"[System] CEO approved purchase of '{requested_tool}' license."
+
+            # 공통: 상태를 APPROVED로 변경 (에이전트가 알 수 있게)
             task.status = Task.TaskStatus.APPROVED
             task.save()
             
             if request.htmx:
+                # 리스트 갱신
                 tasks = Task.objects.filter(assignee__owner=request.user, status=Task.TaskStatus.WAIT_APPROVAL)
                 return render(request, 'corp/partials/task_list.html', {'tasks': tasks})
 

@@ -7,6 +7,8 @@ from ai_core.tools.kms_tools import search_wiki_tool
 from ai_core.tools.math_tools import calculator_tool
 from ai_core.tools.web_search import search_web, fetch_web_content_tool
 from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool, ask_manager_tool, reply_to_subordinate_tool
+from ai_core.tools.registry import TIER_0_TOOLS, get_authorized_tools
+from ai_core.tools.system_tools import request_tool_access
 from corp.services import agent_service, kms_service
 import time
 from datetime import datetime
@@ -69,9 +71,12 @@ class Command(BaseCommand):
     help = 'Runs the AI agents loop.'
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.SUCCESS("Starting AI Corp Runner..."))
+        self.stdout.write(self.style.SUCCESS("Starting AI Corp Runner (Dynamic Tools Enabled)..."))
         
-        # agent_workflow = create_agent_workflow(TOOLS)
+        # [변경] System Tool(요청 도구)은 기본 소양에 포함시킴
+        BASE_INHERENT_TOOLS = TIER_0_TOOLS + [request_tool_access]
+
+        # Review Workflow는 공통이므로 밖에서 생성
         review_workflow = create_review_workflow()
 
         while True:
@@ -87,12 +92,13 @@ class Command(BaseCommand):
                 self.stdout.write(f"▶ Agent {task.assignee.name} working on '{task.title}' (State: {task.status})...")
                 
                 try:
-                    current_agent_tools = BASE_TOOLS.copy()
+                    current_agent_tools = BASE_INHERENT_TOOLS.copy()
+                    
+                    authorized_tools = get_authorized_tools(task.assignee.allowed_tools)
+                    current_agent_tools.extend(authorized_tools)
                     
                     if task.assignee.can_hire:
                         current_agent_tools.append(create_sub_agent_tool)
-                        
-                    # 권한 체크: 해고 권한이 있을 때만 도구 지급
                     if task.assignee.can_fire:
                         current_agent_tools.append(fire_sub_agent_tool)
                     
