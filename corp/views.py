@@ -29,6 +29,12 @@ class DashboardView(LoginRequiredMixin, View):
             status=Task.TaskStatus.WAIT_ANSWER,
         ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
+        roadmap_tasks = Task.objects.filter(
+            assignee__owner=request.user,
+            status=Task.TaskStatus.APPROVED,
+            result__startswith="REQUEST_DEV:"
+        ).order_by('created_at')
+        
         ollama_client = OllamaClient()
         ollama_status = "Offline"
         ollama_models = []
@@ -47,6 +53,7 @@ class DashboardView(LoginRequiredMixin, View):
             'todo_tasks': todo_tasks,
             'approval_tasks': approval_tasks,
             'question_tasks': question_tasks,
+            'roadmap_tasks': roadmap_tasks,
             'ollama_models': ollama_models,
             'ollama_status': ollama_status,
             'agent_queue_status': 'Idle',
@@ -219,6 +226,25 @@ class DashboardView(LoginRequiredMixin, View):
                 # 갱신된 리스트 반환
                 agents = Agent.objects.filter(owner=request.user, manager__isnull=True).order_by('name')
                 return render(request, 'corp/partials/agent_list.html', {'agents': agents})
+        
+        elif action == 'deploy_feature':
+            task_id = request.POST.get('task_id')
+            task = get_object_or_404(Task, id=task_id, assignee__owner=request.user)
+            
+            # 상태를 DONE으로 변경하여 로드맵에서 제거 (히스토리로 남음)
+            task.status = Task.TaskStatus.DONE
+            # 로그에 기록 추가
+            task.result += "\n\n[System] ✅ Feature Deployed & Server Updated."
+            task.save()
+            
+            # 로드맵 리스트 갱신 (HTMX)
+            if request.htmx:
+                roadmap_tasks = Task.objects.filter(
+                    assignee__owner=request.user,
+                    status=Task.TaskStatus.APPROVED,
+                    result__startswith="REQUEST_DEV:"
+                ).order_by('created_at')
+                return render(request, 'corp/partials/roadmap_list.html', {'roadmap_tasks': roadmap_tasks})
         
         return redirect('corp:dashboard')
 
