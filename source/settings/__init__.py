@@ -63,7 +63,7 @@ ROOT_URLCONF = 'source.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -128,6 +128,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static', # [추가] 개발 단계에서 루트 static 폴더를 참조하도록 설정
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles' # [추가] 배포 시 collectstatic이 모아줄 폴더
 
-LOGIN_URL = '/admin/login/'
-LOGIN_REDIRECT_URL = '/corp/dashboard/'
+LOGIN_URL = 'account:login'
+LOGIN_REDIRECT_URL = 'corp:dashboard'
