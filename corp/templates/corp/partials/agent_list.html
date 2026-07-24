@@ -3,8 +3,8 @@
         <li>
             <div class="agent-item-row">
                 <span style="font-size: 1.2em;">👤</span>
-                <a href="{% url 'corp:agent_detail' pk=agent.id %}" class="agent-name">
-                    {{ agent.name }}
+                <a href="{% url 'corp:agent_detail' pk=agent.id %}" class="agent-name" style="color: #00f2fe; font-weight: 700; text-decoration: underline;">
+                    {{ agent.name }} ↗
                 </a>
                 
                 <span class="role-badge" title="{{ agent.role }}">

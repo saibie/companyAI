@@ -57,7 +57,7 @@
             <div class="agent-sim-card">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
-                        <strong style="color: #fff; font-size: 0.95rem;">{{ sim.name }}</strong>
+                        <a href="{% url 'corp:agent_detail' pk=sim.id %}" style="color: #00f2fe; font-size: 0.95rem; font-weight: 700; text-decoration: underline;">{{ sim.name }} ↗</a>
                         <div style="font-size: 0.78rem; color: var(--text-muted);">{{ sim.role }} (Depth {{ sim.depth }})</div>
                     </div>
                     <span class="badge-risk {% if sim.is_active %}high{% else %}ok{% endif %}">
