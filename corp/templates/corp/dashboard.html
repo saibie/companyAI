@@ -113,31 +113,33 @@
         </div>
     </div>
 
-    <!-- 🏛️ Legacy Org Chart & Task Workspace -->
-    <div class="dashboard-grid">
-        <!-- Left Column: HR & Org Structure -->
-        <div class="col-left">
-            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass);">
-                <h3 style="color: var(--accent-cyan); margin-top:0;">👥 Organizational Chart</h3>
-                <div id="agent-list">
-                    {% include 'corp/partials/agent_list.html' %}
+    <!-- 🏛️ Legacy Org Chart & Task Workspace (50:50 Equal 2-Split Layout) -->
+    <div class="dashboard-grid" style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 24px !important; width: 100%;">
+        <!-- Left Column: HR & Org Structure (Internal 2-Split: Org Chart Left, Hire Form Right) -->
+        <div class="col-left" style="display: flex; flex-direction: column; gap: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); margin:0;">
+                    <h3 style="color: var(--accent-cyan); margin-top:0;">👥 Organizational Chart</h3>
+                    <div id="agent-list">
+                        {% include 'corp/partials/agent_list.html' %}
+                    </div>
                 </div>
-            </div>
 
-            <div class="panel" style="background: var(--panel-dark); border-color: rgba(0, 242, 254, 0.3); border-left: 4px solid var(--accent-cyan);">
-                <h3 style="color: var(--accent-cyan); margin-top:0; font-family:'Outfit', sans-serif;">➕ Hire New Agent (Safeguard Protected)</h3>
-                <form hx-post="{% url 'corp:hx_create_agent' %}" hx-target="#agent-list" hx-swap="innerHTML">
-                    {% csrf_token %}
-                    <input type="text" name="name" placeholder="Agent Name (e.g. 이엔지)" required class="cos-input" style="margin-bottom:8px; width:100%;">
-                    <input type="text" name="role" placeholder="Agent Role (e.g. Senior Backend Dev)" required class="cos-input" style="margin-bottom:8px; width:100%;">
-                    <select name="manager" class="cos-input" style="margin-bottom:12px; color:#fff; background:#1e293b; width:100%;">
-                        <option value="">-- No Manager (Direct Report to CEO) --</option>
-                        {% for agent in agents %}
-                            <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit" class="btn-cos-send" style="width:100%; font-size: 1rem; padding: 12px;">➕ Hire Agent Now</button>
-                </form>
+                <div class="panel" style="background: var(--panel-dark); border-color: rgba(0, 242, 254, 0.3); border-left: 4px solid var(--accent-cyan); margin:0;">
+                    <h3 style="color: var(--accent-cyan); margin-top:0; font-family:'Outfit', sans-serif;">➕ Hire New Agent</h3>
+                    <form hx-post="{% url 'corp:hx_create_agent' %}" hx-target="#agent-list" hx-swap="innerHTML">
+                        {% csrf_token %}
+                        <input type="text" name="name" placeholder="Agent Name (e.g. 이엔지)" required class="cos-input" style="margin-bottom:8px; width:100%;">
+                        <input type="text" name="role" placeholder="Agent Role (e.g. Senior Dev)" required class="cos-input" style="margin-bottom:8px; width:100%;">
+                        <select name="manager" class="cos-input" style="margin-bottom:12px; color:#fff; background:#1e293b; width:100%;">
+                            <option value="">-- Direct Report to CEO --</option>
+                            {% for agent in agents %}
+                                <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn-cos-send" style="width:100%; font-size: 0.9rem; padding: 10px;">➕ Hire Agent Now</button>
+                    </form>
+                </div>
             </div>
         </div>
 

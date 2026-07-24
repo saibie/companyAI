@@ -1,42 +1,41 @@
 <ul style="padding: 0; margin: 0; list-style: none;">
     {% for task in approval_tasks %}
-        <li style="background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255,255,255,0.12); padding: 18px; margin-bottom: 16px; border-radius: 12px;">
+        <li style="background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255,255,255,0.12); padding: 20px; margin-bottom: 16px; border-radius: 12px;">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                <div style="font-size: 1.1rem; font-weight: bold; color: #ffffff;">
+                <div style="font-size: 1.15rem; font-weight: bold; color: #ffffff;">
                     {{ task.title }} 
-                    <span style="font-size: 0.85rem; color: #00f2fe; font-weight: normal; margin-left: 8px;">
+                    <span style="font-size: 0.88rem; color: #00f2fe; font-weight: normal; margin-left: 8px;">
                         (Agent: 🤖 {{ task.assignee.name }})
                     </span>
                 </div>
                 <span class="badge-risk ok">WAIT_APPROVAL</span>
             </div>
 
-            <!-- Scrollable 2-Split Grid (Left 50%: Requirements, Right 50%: Result/Proposal) -->
-            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px;">
-                <!-- Left Split: Description -->
-                <div style="background: rgba(15, 23, 42, 0.75); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); max-height: 300px; overflow-y: auto; min-width: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: #00f2fe; font-size: 0.9rem;">📄 Task Requirements & Description</h4>
-                    <div style="font-size: 0.88rem; color: #e2e8f0; white-space: pre-wrap; line-height: 1.5;">{{ task.description }}</div>
-                </div>
-
-                <!-- Right Split: Result / Proposal -->
-                <div style="background: rgba(15, 23, 42, 0.75); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); max-height: 300px; overflow-y: auto; min-width: 0;">
-                    <h4 style="margin: 0 0 8px 0; color: #10b981; font-size: 0.9rem;">📝 Execution Result & Output Proposal</h4>
-                    {% if task.result %}
-                    <div style="font-size: 0.85rem; color: #e2e8f0; white-space: pre-wrap; font-family: monospace; line-height: 1.5;">{{ task.result }}</div>
-                    {% else %}
-                    <div style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No result generated yet...</div>
-                    {% endif %}
-                </div>
+            <!-- Task Requirements & Description -->
+            <div style="color: #cbd5e1; margin-bottom: 14px; font-size: 0.92rem; background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: #00f2fe; display: block; margin-bottom: 4px;">📄 Task Description & Requirements:</strong>
+                <div style="white-space: pre-wrap; line-height: 1.5; color: #e2e8f0;">{{ task.description }}</div>
             </div>
+
+            <!-- Proposal Result Output -->
+            {% if task.result %}
+            <div style="background: rgba(15, 23, 42, 0.8); padding: 14px; border-left: 4px solid #10b981; border-radius: 8px; margin-bottom: 16px;">
+                <strong style="color: #10b981; display: block; margin-bottom: 6px;">📝 Execution Result & Output Proposal:</strong>
+                <div style="white-space: pre-wrap; font-family: 'Inter', monospace; font-size: 0.88rem; color: #e2e8f0; line-height: 1.6;">{{ task.result }}</div>
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); font-size: 0.88rem; font-style: italic; margin-bottom: 16px;">
+                (No result generated yet. Task is processing in background...)
+            </div>
+            {% endif %}
 
             <!-- CEO Actions Bar -->
             <div style="display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; flex-wrap: wrap;">
                 <form hx-post="{% url 'corp:hx_approve_task' %}" hx-target="#task-list-container" hx-swap="innerHTML" style="margin: 0;">
                     {% csrf_token %}
                     <input type="hidden" name="task_id" value="{{ task.id }}">
-                    <button type="submit" class="btn-cos-send" style="padding: 8px 20px; font-size: 0.9rem; background: linear-gradient(135deg, #10b981, #059669); color: #fff; cursor: pointer; border-radius: 8px;">
+                    <button type="submit" class="btn-cos-send" style="padding: 10px 24px; font-size: 0.92rem; background: linear-gradient(135deg, #10b981, #059669); color: #fff; cursor: pointer; border-radius: 8px; font-weight: bold;">
                         ✅ Approve Pitch
                     </button>
                 </form>
@@ -45,13 +44,13 @@
                     {% csrf_token %}
                     <input type="hidden" name="task_id" value="{{ task.id }}">
                     <input type="text" name="feedback" placeholder="Reason for rejection / feedback..." required class="cos-input" style="flex: 1; padding: 8px 12px; font-size: 0.88rem;">
-                    <button type="submit" class="btn" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <button type="submit" class="btn" style="background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold;">
                         ❌ Reject
                     </button>
                 </form>
             </div>
         </li>
     {% empty %}
-        <li style="color: var(--text-muted); text-align: center; padding: 20px;">No tasks waiting for CEO approval.</li>
+        <li style="color: var(--text-muted); text-align: center; padding: 24px;">No tasks waiting for CEO approval.</li>
     {% endfor %}
 </ul>
