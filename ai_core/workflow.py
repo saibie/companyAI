@@ -1,7 +1,7 @@
 import os
 from django.utils import timezone
 from typing import TypedDict, List, Annotated
-from langchain_core.messages import BaseMessage, SystemMessage
+from langchain_core.messages import BaseMessage, SystemMessage, ToolMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_ollama import ChatOllama
@@ -193,8 +193,16 @@ class AgentNodes:
         # print(system_prompt_text)
         # print("="*80 + "\n")
         
+        # [핵심] 도구 실행(ToolMessage) 후에는 LLM이 더 이상 도구를 반복 호출하지 않고
+        # 최종 답변/제안서를 작성하도록 도구 바인딩이 없는 기본 llm을 사용합니다 (무한 루프 원천 차단).
+        has_tool_response = any(isinstance(m, ToolMessage) or getattr(m, 'type', None) == 'tool' for m in state["messages"])
+        
         messages = [SystemMessage(content=system_prompt_text)] + state["messages"]
-        response = self.llm_with_tools.invoke(messages)
+        
+        if has_tool_response:
+            response = self.llm.invoke(messages)
+        else:
+            response = self.llm_with_tools.invoke(messages)
         
         return {"messages": [response]}
 

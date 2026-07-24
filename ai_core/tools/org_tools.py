@@ -15,4 +15,4 @@ def create_plan(steps: List[str]) -> str:
     
     # 이 반환값은 에이전트의 기억(History)에 남게 되어, 
     # 에이전트가 이후 이 계획을 보며 작업을 수행하게 됩니다.
-    return f"Plan saved successfully:\n{formatted_plan}"
+    return f"Plan saved successfully:\n{formatted_plan}\nNOTE: Plan is created. Do NOT call create_plan again. Present your proposal or execute the plan."

@@ -210,8 +210,18 @@ class Command(BaseCommand):
                     task.save()
 
                 except Exception as e:
-                    print(f"Error in execution: {e}")
-                    # 에러 시 일단 유지
+                    self.stdout.write(self.style.ERROR(f"❌ Error in execution for '{task.title}': {e}"))
+                    try:
+                        task.refresh_from_db()
+                        if task.result:
+                            task.status = Task.TaskStatus.WAIT_APPROVAL
+                            task.feedback = f"[Safeguard Warning]: Interrupted by loop ({str(e)[:100]}). Partial result submitted."
+                        else:
+                            task.status = Task.TaskStatus.ESCALATED
+                            task.feedback = f"[Safeguard Alert]: Execution error ({str(e)[:100]}). Escalated to CoS."
+                        task.save()
+                    except Exception as sub_e:
+                        print(f"Error saving task fallback status: {sub_e}")
 
             # ------------------------------------------------------------------
             # Case B: [Manager] Review Work (WAIT_APPROVAL)
