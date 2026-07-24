@@ -53,7 +53,7 @@ ul { list-style: none; padding-left: 0; margin: 0; }
 }
 
 /* Layout Utility Classes */
-.container { max-width: 1400px; margin: 0 auto; }
+.container { max-width: 96%; width: 96%; margin: 0 auto; }
 .dashboard-grid { display: flex; gap: 20px; flex-wrap: wrap; }
 .col-left { flex: 1; min-width: 320px; }
 .col-right { flex: 2; min-width: 500px; }
