@@ -135,3 +135,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles' # [추가] 배포 시 collectstatic이 �
 
 LOGIN_URL = 'account:login'
 LOGIN_REDIRECT_URL = 'corp:dashboard'
+
+AUTHENTICATION_BACKENDS = [
+    'account.authentication.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
