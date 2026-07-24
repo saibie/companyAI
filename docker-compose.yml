@@ -31,7 +31,7 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: ${DB_HOST}
+      DB_HOST: postgres
       DB_PORT: 5432
       OLLAMA_HOST: ${OLLAMA_HOST}
       LLM_MODEL: ${LLM_MODEL:-gemma4-ex-llmfan46:26b}
