@@ -43,10 +43,13 @@ def manager_review_node(state: ReviewState):
     1. If it looks good and aligns with the goal, APPROVE it.
     2. If it is wrong, dangerous, or incomplete, REJECT it with constructive feedback.
     
+    [Language Requirement]
+    - Write FEEDBACK in natural Korean language.
+
     [Output Format]
     You MUST output in this exact format:
     DECISION: [APPROVE | REJECT]
-    FEEDBACK: [Your reasoning and instructions]
+    FEEDBACK: [Your reasoning and instructions in Korean]
     """
     
     response = llm.invoke(prompt).content
@@ -55,10 +58,12 @@ def manager_review_node(state: ReviewState):
     decision = "REJECT"
     feedback = response
     
-    if "DECISION: APPROVE" in response:
-        decision = "APPROrove"
-    elif "DECISION: REJECT" in response:
+    if "DECISION: APPROVE" in response or "DECISION:APPROVE" in response or "DECISION: [APPROVE]" in response:
+        decision = "APPROVE"
+    elif "DECISION: REJECT" in response or "DECISION:REJECT" in response or "DECISION: [REJECT]" in response:
         decision = "REJECT"
+    elif "APPROVE" in response and "REJECT" not in response:
+        decision = "APPROVE"
         
     return {"decision": decision, "feedback": feedback}
 
@@ -184,6 +189,9 @@ class AgentNodes:
 
         {history_context}
         
+        [CRITICAL LANGUAGE RULE]
+        - 당신은 한국 기업의 AI 임원/직원입니다. 모든 제안서, 보고서, 피드백, 답변 및 대화는 100% 자연스럽고 전문적인 한국어(Korean)로 작성하십시오. 절대로 영어로 보고하지 마십시오.
+
         [Rules for Delegation]
         - If you assign a task to a subordinate, you MUST pass the 'current_task_id' ({state['task_id']}) to the 'assign_task' tool.
         - After assigning, your status will automatically change to WAIT_SUBTASK. Do not output "FINAL RESULT" yet.

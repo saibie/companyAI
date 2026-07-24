@@ -22,17 +22,18 @@ class DashboardView(LoginRequiredMixin, View):
         visible_filter = Q(assignee__owner=request.user) & Q(creator__isnull=True)
         
         todo_tasks = Task.objects.filter(
-            visible_filter,
+            assignee__owner=request.user,
             status=Task.TaskStatus.TODO, 
         ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
         approval_tasks = Task.objects.filter(
-            visible_filter,
+            assignee__owner=request.user,
+            assignee__manager__isnull=True,
             status=Task.TaskStatus.WAIT_APPROVAL, 
         ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
         question_tasks = Task.objects.filter(
-            visible_filter,
+            assignee__owner=request.user,
             status=Task.TaskStatus.WAIT_ANSWER,
         ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
