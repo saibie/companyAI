@@ -111,6 +111,7 @@ class Task(models.Model):
         APPROVED = 'APPROVED', 'Approved'
         DONE = 'DONE', 'Done'
         REJECTED = 'REJECTED', 'Rejected'
+        ESCALATED = 'ESCALATED', 'Escalated to CoS'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255)
@@ -128,6 +129,7 @@ class Task(models.Model):
     parent_task = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     result = models.TextField(blank=True, null=True)
     feedback = models.TextField(blank=True, null=True)
+    attempt_count = models.IntegerField(default=0)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -212,3 +214,49 @@ class Announcement(models.Model):
 
     def __str__(self):
         return f"[Broadcast] {self.content[:30]}..."
+
+
+class ImmutableAuditLog(models.Model):
+    """변경 불가능한 해시 체인 감사 로그 (Immutable Audit Log)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(Task, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
+    agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
+    prompt_digest = models.TextField()
+    response_digest = models.TextField()
+    token_count = models.IntegerField(default=0)
+    risk_score = models.FloatField(default=0.0)
+    is_flagged = models.BooleanField(default=False)
+    flag_reason = models.CharField(max_length=255, blank=True, null=True)
+    previous_hash = models.CharField(max_length=64, default="GENESIS")
+    current_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[Audit] {self.agent.name if self.agent else 'System'} - Hash: {self.current_hash[:8]}"
+
+
+class GatekeeperRequest(models.Model):
+    """보안 게이트키핑 샌드박스 승인 요청 (Security Gatekeeping Sandbox)"""
+    class ActionType(models.TextChoices):
+        FINANCIAL = 'FINANCIAL', 'Financial Commitment'
+        DEPLOYMENT = 'DEPLOYMENT', 'Code / System Deployment'
+        HIERARCHY_CHANGE = 'HIERARCHY_CHANGE', 'Hierarchy Alteration'
+        HIGH_RISK_TOOL = 'HIGH_RISK_TOOL', 'High Risk Tool Call'
+
+    class RequestStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending CEO Approval'
+        APPROVED = 'APPROVED', 'Approved by CEO'
+        REJECTED = 'REJECTED', 'Rejected by CEO'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='gatekeeper_requests')
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE)
+    action_type = models.CharField(max_length=30, choices=ActionType.choices, default=ActionType.HIGH_RISK_TOOL)
+    payload = JSONField(default=dict)
+    status = models.CharField(max_length=20, choices=RequestStatus.choices, default=RequestStatus.PENDING)
+    decision_reason = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"[Gatekeeper] {self.action_type} by {self.agent.name} ({self.status})"

@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from corp.models import Agent, Task, TaskLog
 from ai_core.tools.registry import TIER_1_REGISTRY
 
+from corp.services import safeguard_service
+
 # ==============================================================================
 # [Human CEO Only] 인사 관리 (HR)
 # ==============================================================================
@@ -14,6 +16,10 @@ def hire_agent(user: User, name: str, role: str, manager_id: str = None) -> Agen
         # 내 소유의 에이전트 중에서만 매니저를 고를 수 있음 (보안)
         manager = get_object_or_404(Agent, id=manager_id, owner=user)
             
+    allowed, reason = safeguard_service.check_hiring_allowed(manager, user)
+    if not allowed:
+        raise ValueError(f"Hiring rejected by Safeguard Policy: {reason}")
+
     agent = Agent.objects.create(
         owner=user, 
         name=name, 

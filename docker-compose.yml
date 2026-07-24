@@ -18,27 +18,32 @@ services:
     restart: always
 
   # Django Web Application
-  # web:
-  #   build: .
-  #   container_name: ai_corp_web
-  #   command: bash -c "python manage.py makemigrations corp && python manage.py migrate && (python manage.py runserver 0.0.0.0:8000 & python manage.py run_agents)"
-  #   # volumes:
-  #   #   - .:/app
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     SECRET_KEY: your_secret_key_here # Replace with a strong secret key
-  #     DB_NAME: ${DB_NAME}
-  #     DB_USER: ${DB_USER}
-  #     DB_PASSWORD: ${DB_PASSWORD}
-  #     DB_HOST: ${DB_HOST}
-  #     DB_PORT: 5432
-  #     OLLAMA_HOST: ${OLLAMA_HOST}
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - ai_corp_network
-  #   restart: always
+  web:
+    build: .
+    container_name: ai_corp_web
+    command: bash -c "python manage.py makemigrations corp && python manage.py migrate && (python manage.py runserver 0.0.0.0:8000 & python manage.py run_agents)"
+    # volumes:
+    #   - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: your_secret_key_here # Replace with a strong secret key
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 5432
+      OLLAMA_HOST: ${OLLAMA_HOST}
+      LLM_MODEL: ${LLM_MODEL:-gemma4-ex-llmfan46:26b}
+      MAX_AGENT_DEPTH: ${MAX_AGENT_DEPTH:-4}
+      MAX_TOTAL_AGENTS: ${MAX_TOTAL_AGENTS:-20}
+      MAX_SPAN_OF_CONTROL: ${MAX_SPAN_OF_CONTROL:-5}
+      MAX_TASK_ATTEMPTS: ${MAX_TASK_ATTEMPTS:-5}
+    depends_on:
+      - postgres
+    networks:
+      - ai_corp_network
+    restart: always
 
   # (선택) DB 관리 툴 - pgAdmin
   pgadmin:

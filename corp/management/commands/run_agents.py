@@ -9,7 +9,7 @@ from ai_core.tools.web_search import search_web, fetch_web_content_tool
 from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool, ask_manager_tool, reply_to_subordinate_tool
 from ai_core.tools.registry import TIER_0_TOOLS, get_authorized_tools
 from ai_core.tools.system_tools import request_tool_access
-from corp.services import agent_service, kms_service
+from corp.services import agent_service, kms_service, audit_service, safeguard_service
 import time
 from datetime import datetime
 from django.utils import timezone
@@ -138,12 +138,28 @@ class Command(BaseCommand):
                         history_context=history_context
                     )
 
-                    final_state = agent_workflow.invoke(initial_state)
+                    # Safeguard Check: 태스크 시도 횟수 제한 검사
+                    exceeded, attempt_msg = safeguard_service.check_task_attempt_limit(task)
+                    if exceeded:
+                        task.status = Task.TaskStatus.ESCALATED
+                        task.feedback = f"[Safeguard Alert]: {attempt_msg}. Task escalated to CoS for human intervention."
+                        task.save()
+                        self.stdout.write(self.style.ERROR(f"🚨 {attempt_msg} for '{task.title}'. ESCALATED."))
+                        continue
+
+                    final_state = agent_workflow.invoke(initial_state, config={"recursion_limit": 15})
                     final_response = final_state["messages"][-1].content
                     
                     task.refresh_from_db()
-                    
                     task.result = final_response
+
+                    # Immutable Audit Log 기록
+                    audit_service.audit_agent_action(
+                        agent=task.assignee,
+                        task=task,
+                        prompt_text=f"Task: {task.title} - {task.description}",
+                        response_text=final_response
+                    )
                     
                     if task.status == Task.TaskStatus.APPROVED:
                         # [변경] 위키 저장 성공 여부에 따라 상태 결정

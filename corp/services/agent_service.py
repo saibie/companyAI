@@ -1,7 +1,6 @@
-from corp.models import Agent, Task, TaskLog
-from django.conf import settings
+from corp.services import safeguard_service
 
-MAX_AGENT_DEPTH = 5
+MAX_AGENT_DEPTH = 4
 
 def create_sub_agent(manager_name: str, name: str, role: str, grant_hire: bool = False, grant_fire: bool = False) -> str:
     """
@@ -22,13 +21,12 @@ def create_sub_agent(manager_name: str, name: str, role: str, grant_hire: bool =
 
         # 1. [Check] 고용 권한이 있는가?
         if not manager.can_hire and manager.manager is not None: 
-            # CEO(manager is None)는 무조건 가능하다고 가정하거나, DB 초기 데이터에서 CEO에게 True를 줘야 함.
-            # 여기서는 안전하게 '상사가 있는데 can_hire가 없으면 거부' 로직
             return f"⛔ Permission Denied: You ({manager_name}) do not have 'HIRING' permission."
 
-        # 2. [Check] 조직 깊이 제한 (Depth Limit)
-        if manager.depth >= MAX_AGENT_DEPTH:
-            return f"⛔ Organization Limit Reached: Cannot hire more levels down (Max Depth: {MAX_AGENT_DEPTH})."
+        # 2. [Safeguard Check] 무한 고용 제약조건 검사
+        allowed, reason = safeguard_service.check_hiring_allowed(manager, manager.owner)
+        if not allowed:
+            return f"⛔ Safeguard Blocked Hiring: {reason}"
 
         # 3. 하위 에이전트 생성 (권한 위임 포함)
         new_agent = manager.create_sub_agent(

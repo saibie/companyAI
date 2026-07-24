@@ -6,9 +6,9 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import HttpRequest
 
-# [중요] 사람용 서비스 임포트
-from corp.services import human_service 
-from .models import Agent, Task, AgentMemory, CorporateMemory
+# [중요] 사람 및 AI 서비스 임포트
+from corp.services import human_service, cos_service
+from .models import Agent, Task, AgentMemory, CorporateMemory, GatekeeperRequest, ImmutableAuditLog
 from ai_core.llm_gateway import OllamaClient
 import requests
 
@@ -54,6 +54,15 @@ class DashboardView(LoginRequiredMixin, View):
 
         all_my_agents = Agent.objects.filter(owner=request.user)
         
+        # Economic Window & CoS AI Data
+        cos_briefing = cos_service.generate_executive_briefing(request.user)
+        sim_metrics = cos_service.get_economic_simulation_metrics(request.user)
+        gatekeeper_requests = GatekeeperRequest.objects.filter(
+            agent__owner=request.user, 
+            status=GatekeeperRequest.RequestStatus.PENDING
+        ).select_related('agent', 'task')
+        audit_logs = ImmutableAuditLog.objects.select_related('agent', 'task').order_by('-created_at')[:8]
+
         context = {
             'agents': agents,
             'all_my_agents': all_my_agents,
@@ -64,6 +73,10 @@ class DashboardView(LoginRequiredMixin, View):
             'ollama_models': ollama_models,
             'ollama_status': ollama_status,
             'agent_queue_status': 'Idle',
+            'cos_briefing': cos_briefing,
+            'sim_metrics': sim_metrics,
+            'gatekeeper_requests': gatekeeper_requests,
+            'audit_logs': audit_logs,
         }
         return render(request, 'corp/dashboard.html', context)
 
@@ -251,3 +264,54 @@ def htmx_ollama_pull(request):
         pull_status_messages.append(f"❌ Error: {e}")
 
     return render(request, 'corp/partials/ollama_pull_status.html', {'pull_status_messages': pull_status_messages})
+
+
+@login_required
+@require_POST
+def htmx_cos_command(request):
+    """CEO 전략 지시문 수석 보좌관(CoS)에 하달"""
+    directive = request.POST.get('directive', '').strip()
+    if directive:
+        cos_service.dispatch_ceo_directive(request.user, directive)
+
+    cos_briefing = cos_service.generate_executive_briefing(request.user)
+    sim_metrics = cos_service.get_economic_simulation_metrics(request.user)
+    approval_tasks = Task.objects.filter(assignee__owner=request.user, status=Task.TaskStatus.WAIT_APPROVAL)
+
+    return render(request, 'corp/partials/cos_status.html', {
+        'cos_briefing': cos_briefing,
+        'sim_metrics': sim_metrics,
+        'approval_tasks': approval_tasks
+    })
+
+
+@login_required
+@require_POST
+def htmx_gatekeeper_action(request):
+    """보안 게이트키핑 샌드박스 승인/반려"""
+    request_id = request.POST.get('request_id')
+    decision = request.POST.get('decision') # approve or reject
+    
+    gk_req = get_object_or_404(GatekeeperRequest, id=request_id, agent__owner=request.user)
+    
+    if decision == 'approve':
+        gk_req.status = GatekeeperRequest.RequestStatus.APPROVED
+        gk_req.save()
+        # 태스크 재개
+        task = gk_req.task
+        task.status = Task.TaskStatus.APPROVED
+        task.feedback = f"[Gatekeeper Approved]: CEO authorized action '{gk_req.action_type}'."
+        task.save()
+    else:
+        gk_req.status = GatekeeperRequest.RequestStatus.REJECTED
+        gk_req.save()
+        task = gk_req.task
+        task.status = Task.TaskStatus.THINKING
+        task.feedback = f"[Gatekeeper Rejected]: CEO denied authorization for action '{gk_req.action_type}'."
+        task.save()
+
+    gatekeeper_requests = GatekeeperRequest.objects.filter(
+        agent__owner=request.user, 
+        status=GatekeeperRequest.RequestStatus.PENDING
+    ).select_related('agent', 'task')
+    return render(request, 'corp/partials/gatekeeper_list.html', {'gatekeeper_requests': gatekeeper_requests})

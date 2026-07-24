@@ -1,0 +1,22 @@
+<div class="cos-briefing-box" style="line-height: 1.6; color: #e2e8f0; font-size: 0.95rem;">
+    {{ cos_briefing|linebreaks }}
+</div>
+
+<div class="economic-grid" style="margin-top: 20px;">
+    <div class="metric-card cyan">
+        <div class="metric-label">Market Opportunity</div>
+        <div class="metric-value">{{ sim_metrics.opportunity_score }} <span style="font-size: 0.9rem; color: var(--accent-cyan);">pts</span></div>
+    </div>
+    <div class="metric-card emerald">
+        <div class="metric-label">Projected ROI</div>
+        <div class="metric-value">+{{ sim_metrics.expected_roi }}%</div>
+    </div>
+    <div class="metric-card amber">
+        <div class="metric-label">Active Agents</div>
+        <div class="metric-value">{{ sim_metrics.total_agents }} <span style="font-size: 0.8rem; color: #94a3b8;">/ 20</span></div>
+    </div>
+    <div class="metric-card rose">
+        <div class="metric-label">Risk & Sandbox</div>
+        <div class="metric-value">{{ sim_metrics.risk_index }}%</div>
+    </div>
+</div>

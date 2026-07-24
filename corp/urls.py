@@ -24,8 +24,10 @@ urlpatterns = [
     # 모니터링 액션도 쪼갤 수 있습니다.
     path('htmx/monitor/update/', views.htmx_monitor_update, name='hx_monitor_update'),
     
-    # [기타]
+    # [기타 및 CoS / Gatekeeper]
     path('htmx/ollama/pull/', views.htmx_ollama_pull, name='hx_ollama_pull'),
+    path('htmx/cos/command/', views.htmx_cos_command, name='hx_cos_command'),
+    path('htmx/gatekeeper/action/', views.htmx_gatekeeper_action, name='hx_gatekeeper_action'),
     
     # 기존 상세 페이지들
     path('agent/<uuid:pk>/detail/', views.AgentDetailView.as_view(), name='agent_detail'),

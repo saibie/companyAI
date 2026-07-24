@@ -7,7 +7,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_ollama import ChatOllama
 from corp.services.comm_service import get_active_announcement
 
-GLOBAL_MODEL_NAME = os.getenv("LLM_MODEL", "qwen3:8b")
+GLOBAL_MODEL_NAME = os.getenv("LLM_MODEL", "gemma4-ex-llmfan46:26b")
 
 # ==============================================================================
 # 2. 상태(State) 및 노드(Nodes) 정의
