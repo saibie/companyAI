@@ -10,123 +10,131 @@
 {% block content %}
 <div class="economic-theme">
 
-    <!-- 🌐 Top Chief of Staff AI Cognitive Shield Bar -->
-    <div class="cos-header-card">
-        <div class="cos-title-row">
-            <div class="cos-title">
-                🛡️ Chief of Staff AI (Cognitive Shield)
-            </div>
-            <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 16px;">
-                <span>🔌 Ollama Engine: <strong style="color: var(--accent-cyan);">{{ ollama_status }}</strong> ({{ GLOBAL_MODEL_NAME|default:"gemma4-ex-llmfan46:26b" }})</span>
-                <span class="tooltip-container" style="color: var(--accent-blue);">
-                    ⚡ Manage LLM
-                    <span class="tooltip-text">
-                        <form hx-post="{% url 'corp:hx_ollama_pull' %}" hx-target="#ollama-pull-status" hx-swap="innerHTML" style="margin-top:5px;">
-                            {% csrf_token %}
-                            <input type="text" name="model_name" value="gemma4-ex-llmfan46:26b" style="width: 160px; padding: 4px; background:#1e293b; color:#fff; border:1px solid #475569;">
-                            <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8em;">Pull</button>
-                        </form>
-                        <div id="ollama-pull-status" style="margin-top: 5px;"></div>
-                    </span>
-                </span>
-            </div>
-        </div>
-
-        <div id="cos-status-container">
-            {% include 'corp/partials/cos_status.html' %}
-        </div>
-
-        <form hx-post="{% url 'corp:hx_cos_command' %}" hx-target="#cos-status-container" hx-swap="innerHTML" class="cos-directive-form">
-            {% csrf_token %}
-            <input type="text" name="directive" placeholder="Enter high-level strategic CEO directive (e.g., 'Expand market analysis for Q3 AI agent deployment')..." class="cos-input" required>
-            <button type="submit" class="btn-cos-send">Dispatch Directive</button>
-        </form>
-    </div>
-
-    <!-- 🔮 Probability Field Radar & Simulation Zone -->
-    <div class="field-radar-box">
-        <div class="radar-header">
-            <h3 style="margin:0; font-family:'Outfit', sans-serif; font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
-                🌌 Probability Field & Agent Simulation Radar
-            </h3>
-            <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time Headcount: {{ sim_metrics.total_agents }} / 20</span>
-        </div>
-
-        <div class="sim-agents-list">
-            {% for sim in sim_metrics.agent_simulations %}
-            <div class="agent-sim-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <a href="{% url 'corp:agent_detail' pk=sim.id %}" style="color: #00f2fe; font-size: 0.95rem; font-weight: 700; text-decoration: underline;">{{ sim.name }} ↗</a>
-                        <div style="font-size: 0.78rem; color: var(--text-muted);">{{ sim.role }} (Depth {{ sim.depth }})</div>
+    <!-- 🚀 Master 50:50 Side-by-Side 2-Split Page Grid (Left: Intelligence & Monitoring | Right: Command & Operations) -->
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; width: 100%;">
+        
+        <!-- ⬅️ LEFT COLUMN (50%): Intelligence, Radar, Security & Audit Log -->
+        <div class="dash-split-left" style="display: flex; flex-direction: column; gap: 24px; min-width: 0;">
+            
+            <!-- 🛡️ Chief of Staff AI Cognitive Shield Bar -->
+            <div class="cos-header-card" style="margin-bottom: 0;">
+                <div class="cos-title-row">
+                    <div class="cos-title">
+                        🛡️ Chief of Staff AI (Cognitive Shield)
                     </div>
-                    <span class="badge-risk {% if sim.is_active %}high{% else %}ok{% endif %}">
-                        {{ sim.status_label }}
-                    </span>
-                </div>
-                <div style="margin-top: 12px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #cbd5e1;">
-                        <span>Opportunity Prob: <strong>{{ sim.probability }}%</strong></span>
-                        <span>Value: <strong>{{ sim.projected_value }}</strong></span>
-                    </div>
-                    <div class="prob-bar-container">
-                        <div class="prob-bar-fill" style="width: {{ sim.probability }}%;"></div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 16px;">
+                        <span>🔌 Ollama Engine: <strong style="color: var(--accent-cyan);">{{ ollama_status }}</strong> ({{ GLOBAL_MODEL_NAME|default:"gemma4-ex-llmfan46:26b" }})</span>
+                        <span class="tooltip-container" style="color: var(--accent-blue);">
+                            ⚡ Manage LLM
+                            <span class="tooltip-text">
+                                <form hx-post="{% url 'corp:hx_ollama_pull' %}" hx-target="#ollama-pull-status" hx-swap="innerHTML" style="margin-top:5px;">
+                                    {% csrf_token %}
+                                    <input type="text" name="model_name" value="gemma4-ex-llmfan46:26b" style="width: 160px; padding: 4px; background:#1e293b; color:#fff; border:1px solid #475569;">
+                                    <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 0.8em;">Pull</button>
+                                </form>
+                                <div id="ollama-pull-status" style="margin-top: 5px;"></div>
+                            </span>
+                        </span>
                     </div>
                 </div>
-            </div>
-            {% empty %}
-            <div style="color: var(--text-muted); font-size: 0.9rem; padding: 12px;">No active agents in simulation field.</div>
-            {% endfor %}
-        </div>
-    </div>
 
-    <!-- 🔒 Gatekeeper Security Sandbox & Immutable Audit Section -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
-        <!-- Security Sandbox Widget -->
-        <div class="gatekeeper-widget">
-            <h3 style="margin-top:0; font-family:'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent-amber); display: flex; align-items: center; gap: 8px;">
-                🛡️ Security Gatekeeping Sandbox
-            </h3>
-            <div id="gatekeeper-list-container">
-                {% include 'corp/partials/gatekeeper_list.html' %}
-            </div>
-        </div>
-
-        <!-- Immutable Audit Log Widget -->
-        <div class="audit-widget">
-            <h3 style="margin-top:0; font-family:'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
-                📜 Immutable Audit Log (SHA-256)
-            </h3>
-            <div style="max-height: 220px; overflow-y: auto;">
-                {% for log in audit_logs %}
-                <div style="font-family: monospace; font-size: 0.78rem; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; display: flex; justify-content: space-between;">
-                    <span>
-                        <strong style="color: var(--accent-cyan);">[{{ log.created_at|date:"H:i:s" }}]</strong> 
-                        {{ log.agent.name|default:"System" }}: {{ log.prompt_digest|truncatechars:40 }}
-                    </span>
-                    <span style="color: var(--accent-emerald);">#{{ log.current_hash|slice:":8" }}</span>
+                <div id="cos-status-container">
+                    {% include 'corp/partials/cos_status.html' %}
                 </div>
-                {% empty %}
-                <div style="color: var(--text-muted); font-size: 0.85rem; padding: 8px;">No audit entries logged yet.</div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
 
-    <!-- 🏛️ Legacy Org Chart & Task Workspace (50:50 Equal 2-Split Layout) -->
-    <div class="dashboard-grid" style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 24px !important; width: 100%;">
-        <!-- Left Column: HR & Org Structure (Internal 2-Split: Org Chart Left, Hire Form Right) -->
-        <div class="col-left" style="display: flex; flex-direction: column; gap: 16px;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <form hx-post="{% url 'corp:hx_cos_command' %}" hx-target="#cos-status-container" hx-swap="innerHTML" class="cos-directive-form">
+                    {% csrf_token %}
+                    <input type="text" name="directive" placeholder="Enter high-level strategic CEO directive (e.g., 'Expand market analysis for Q3 AI agent deployment')..." class="cos-input" required>
+                    <button type="submit" class="btn-cos-send">Dispatch Directive</button>
+                </form>
+            </div>
+
+            <!-- 🌌 Probability Field Radar & Simulation Zone -->
+            <div class="field-radar-box" style="margin-bottom: 0;">
+                <div class="radar-header">
+                    <h3 style="margin:0; font-family:'Outfit', sans-serif; font-size: 1.15rem; color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+                        🌌 Probability Field & Agent Simulation Radar
+                    </h3>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Real-time Headcount: {{ sim_metrics.total_agents }} / 20</span>
+                </div>
+
+                <div class="sim-agents-list">
+                    {% for sim in sim_metrics.agent_simulations %}
+                    <div class="agent-sim-card">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <a href="{% url 'corp:agent_detail' pk=sim.id %}" style="color: #00f2fe; font-size: 0.95rem; font-weight: 700; text-decoration: underline;">{{ sim.name }} ↗</a>
+                                <div style="font-size: 0.78rem; color: var(--text-muted);">{{ sim.role }} (Depth {{ sim.depth }})</div>
+                            </div>
+                            <span class="badge-risk {% if sim.is_active %}high{% else %}ok{% endif %}">
+                                {{ sim.status_label }}
+                            </span>
+                        </div>
+                        <div style="margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #cbd5e1;">
+                                <span>Opportunity Prob: <strong>{{ sim.probability }}%</strong></span>
+                                <span>Value: <strong>{{ sim.projected_value }}</strong></span>
+                            </div>
+                            <div class="prob-bar-container">
+                                <div class="prob-bar-fill" style="width: {{ sim.probability }}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div style="color: var(--text-muted); font-size: 0.9rem; padding: 12px;">No active agents in simulation field.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- 🔒 Security Sandbox & Immutable Audit Log -->
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px;">
+                <!-- Security Sandbox Widget -->
+                <div class="gatekeeper-widget" style="margin-bottom: 0;">
+                    <h3 style="margin-top:0; font-family:'Outfit', sans-serif; font-size: 1.05rem; color: var(--accent-amber); display: flex; align-items: center; gap: 8px;">
+                        🛡️ Security Gatekeeping Sandbox
+                    </h3>
+                    <div id="gatekeeper-list-container">
+                        {% include 'corp/partials/gatekeeper_list.html' %}
+                    </div>
+                </div>
+
+                <!-- Immutable Audit Log Widget -->
+                <div class="audit-widget" style="margin-bottom: 0;">
+                    <h3 style="margin-top:0; font-family:'Outfit', sans-serif; font-size: 1.05rem; color: var(--accent-emerald); display: flex; align-items: center; gap: 8px;">
+                        📜 Immutable Audit Log (SHA-256)
+                    </h3>
+                    <div style="max-height: 220px; overflow-y: auto;">
+                        {% for log in audit_logs %}
+                        <div style="font-family: monospace; font-size: 0.78rem; padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; display: flex; justify-content: space-between;">
+                            <span>
+                                <strong style="color: var(--accent-cyan);">[{{ log.created_at|date:"H:i:s" }}]</strong> 
+                                {{ log.agent.name|default:"System" }}: {{ log.prompt_digest|truncatechars:30 }}
+                            </span>
+                            <span style="color: var(--accent-emerald);">#{{ log.current_hash|slice:":8" }}</span>
+                        </div>
+                        {% empty %}
+                        <div style="color: var(--text-muted); font-size: 0.85rem; padding: 8px;">No audit entries logged yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ➡️ RIGHT COLUMN (50%): Operations, Org Chart, Hiring, Approval Pitches & Direct Directives -->
+        <div class="dash-split-right" style="display: flex; flex-direction: column; gap: 24px; min-width: 0;">
+            
+            <!-- 👥 Org Chart & Hire Agent Side-by-Side Sub-Grid -->
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px;">
                 <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); margin:0;">
-                    <h3 style="color: var(--accent-cyan); margin-top:0;">👥 Organizational Chart</h3>
+                    <h3 style="color: var(--accent-cyan); margin-top:0; font-size: 1.05rem;">👥 Organizational Chart</h3>
                     <div id="agent-list">
                         {% include 'corp/partials/agent_list.html' %}
                     </div>
                 </div>
 
                 <div class="panel" style="background: var(--panel-dark); border-color: rgba(0, 242, 254, 0.3); border-left: 4px solid var(--accent-cyan); margin:0;">
-                    <h3 style="color: var(--accent-cyan); margin-top:0; font-family:'Outfit', sans-serif;">➕ Hire New Agent</h3>
+                    <h3 style="color: var(--accent-cyan); margin-top:0; font-family:'Outfit', sans-serif; font-size: 1.05rem;">➕ Hire New Agent</h3>
                     <form hx-post="{% url 'corp:hx_create_agent' %}" hx-target="#agent-list" hx-swap="innerHTML">
                         {% csrf_token %}
                         <input type="text" name="name" placeholder="Agent Name (e.g. 이엔지)" required class="cos-input" style="margin-bottom:8px; width:100%;">
@@ -141,40 +149,43 @@
                     </form>
                 </div>
             </div>
-        </div>
 
-        <!-- Right Column: Pitch Cards & Approval System -->
-        <div class="col-right">
-            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); border-left: 4px solid var(--accent-emerald);">
-                <h3 style="color: var(--accent-emerald); margin-top:0;">✅ Tasks Waiting CEO Approval (Investment Pitches)</h3>
+            <!-- ✅ Tasks Waiting CEO Approval (Investment Pitches) -->
+            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); border-left: 4px solid var(--accent-emerald); margin:0;">
+                <h3 style="color: var(--accent-emerald); margin-top:0; font-size: 1.1rem;">✅ Tasks Waiting CEO Approval (Investment Pitches)</h3>
                 <div id="task-list-container">
                     {% include 'corp/partials/task_list.html' %}
                 </div>
             </div>
 
-            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); border-left: 4px solid var(--accent-amber);">
-                <h3 style="color: var(--accent-amber); margin-top:0;">🙋‍♂️ Pending Questions / Escalations</h3>
+            <!-- 🙋‍♂️ Pending Questions / Escalations -->
+            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); border-left: 4px solid var(--accent-amber); margin:0;">
+                <h3 style="color: var(--accent-amber); margin-top:0; font-size: 1.1rem;">🙋‍♂️ Pending Questions / Escalations</h3>
                 <div id="question-list-container">
                     {% include 'corp/partials/question_list.html' %}
                 </div>
             </div>
 
-            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass);">
-                <h3 style="color: #fff; margin-top:0;">📝 Create Direct Task</h3>
+            <!-- 📝 Create Direct Task -->
+            <div class="panel" style="background: var(--panel-dark); border-color: var(--border-glass); margin:0;">
+                <h3 style="color: #fff; margin-top:0; font-size: 1.1rem;">📝 Create Direct Task</h3>
                 <form hx-post="{% url 'corp:hx_create_task' %}" hx-target="#task-list-container" hx-swap="innerHTML">
                     {% csrf_token %}
-                    <input type="text" name="title" placeholder="Task Title" required class="cos-input" style="margin-bottom:8px;">
-                    <textarea name="description" placeholder="Task Detailed Description" required rows="3" class="cos-input" style="margin-bottom:8px;"></textarea>
-                    <select name="assignee" required class="cos-input" style="margin-bottom:12px; color:#fff; background:#1e293b;">
+                    <input type="text" name="title" placeholder="Task Title" required class="cos-input" style="margin-bottom:8px; width:100%;">
+                    <textarea name="description" placeholder="Task Detailed Description" required rows="3" class="cos-input" style="margin-bottom:8px; width:100%;"></textarea>
+                    <select name="assignee" required class="cos-input" style="margin-bottom:12px; color:#fff; background:#1e293b; width:100%;">
                         <option value="">-- Assign to Agent --</option>
                         {% for agent in all_my_agents %}
                             <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
                         {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-success" style="width: auto;">Dispatch Task</button>
+                    <button type="submit" class="btn btn-success" style="width: auto; padding: 10px 20px;">Dispatch Task</button>
                 </form>
             </div>
+
         </div>
+
     </div>
+
 </div>
 {% endblock %}
