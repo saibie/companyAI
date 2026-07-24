@@ -283,9 +283,8 @@ class Command(BaseCommand):
                 # 이 태스크에 연결된 하위 태스크들 조회
                 sub_tasks = Task.objects.filter(parent_task=parent_task)
                 
-                # 모든 하위 태스크가 완료(DONE)되었는지 확인
-                # (주의: 만약 하위 태스크가 REJECTED라면 다시 THINKING일 것이므로 DONE 아님)
-                if sub_tasks.exists() and not sub_tasks.exclude(status=Task.TaskStatus.DONE).exists():
+                # 모든 하위 태스크가 완료(DONE)되었거나 미처리 상태인 하위 업무가 없는지 확인
+                if not sub_tasks.exclude(status=Task.TaskStatus.DONE).exists():
                     
                     self.stdout.write(self.style.SUCCESS(f"🔔 All sub-tasks for '{parent_task.title}' are DONE. Waking up manager..."))
                     

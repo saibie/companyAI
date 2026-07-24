@@ -86,7 +86,7 @@ class MonitorView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, *args, **kwargs):
         all_tasks = Task.objects.filter(
             assignee__owner=request.user
-        ).select_related('creator', 'assignee').order_by('status', '-created_at')
+        ).select_related('creator', 'assignee').prefetch_related('logs', 'audit_logs', 'gatekeeper_requests').order_by('status', '-created_at')
 
         context = {
             'tasks': all_tasks,
@@ -241,7 +241,7 @@ def htmx_monitor_update(request):
         
     all_tasks = Task.objects.filter(
         assignee__owner=request.user
-    ).select_related('creator', 'assignee').order_by('status', '-created_at')
+    ).select_related('creator', 'assignee').prefetch_related('logs', 'audit_logs', 'gatekeeper_requests').order_by('status', '-created_at')
     return render(request, 'corp/partials/monitor_list.html', {'tasks': all_tasks})
 
 

@@ -1,20 +1,32 @@
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}System Monitor - AI Corp{% endblock %}
+{% block title %}System Monitor & Task Deep-Dive - AI Corp{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/economic_window.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-        <h2>🔧 System Monitor</h2>
-        <a href="{% url 'corp:dashboard' %}" class="btn btn-primary">Go to Dashboard</a>
+<div class="economic-theme">
+    <div class="cos-header-card" style="margin-bottom: 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <h2 class="cos-title" style="margin:0;">
+                    🔧 System Monitor & Deep-Dive Inspection
+                </h2>
+                <p style="color: var(--text-muted); margin: 6px 0 0 0; font-size: 0.9rem;">
+                    전사 에이전트 간 위임 작업, 실행 결과(Result), 피드백, 시도 횟수 및 감사 히스토리를 정밀 관찰합니다.
+                </p>
+            </div>
+            <a href="{% url 'corp:dashboard' %}" class="btn-cos-send" style="text-decoration:none;">Go to Dashboard</a>
+        </div>
     </div>
-    
-    <p style="color:#666; margin-bottom:20px;">
-        View and manage ALL tasks within your organization, including internal agent-to-agent delegations.
-    </p>
 
-    <div id="monitor-list-container">
-        {% include 'corp/partials/monitor_list.html' %}
+    <div class="field-radar-box">
+        <div id="monitor-list-container">
+            {% include 'corp/partials/monitor_list.html' %}
+        </div>
     </div>
 </div>
 {% endblock %}
