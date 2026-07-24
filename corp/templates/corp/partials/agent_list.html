@@ -1,28 +1,38 @@
-<ul class="agent-tree">
+<ul class="agent-tree" style="list-style: none; padding-left: 12px; margin: 0;">
     {% for agent in agents %}
-        <li>
-            <div class="agent-item-row">
-                <span style="font-size: 1.2em;">👤</span>
-                <a href="{% url 'corp:agent_detail' pk=agent.id %}" class="agent-name" style="color: #00f2fe; font-weight: 700; text-decoration: underline;">
+        <li style="margin-bottom: 8px;">
+            <div class="agent-item-row" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 1.1em;">👤</span>
+                <a href="{% url 'corp:agent_detail' pk=agent.id %}" class="agent-name" style="color: #00f2fe; font-weight: 700; text-decoration: underline; font-size: 0.95rem;">
                     {{ agent.name }} ↗
                 </a>
                 
-                <span class="role-badge" title="{{ agent.role }}">
+                <span class="role-badge" title="{{ agent.role }}" style="background: rgba(255,255,255,0.1); color: #cbd5e1; padding: 2px 8px; border-radius: 4px; font-size: 0.78rem;">
                     {{ agent.role }}
                 </span>
                 
                 {% if not agent.is_active %}
-                    <span style="color: red; font-size: 0.8em; white-space: nowrap;">[Inactive]</span>
+                    <span style="color: #f43f5e; font-size: 0.8em; font-weight: bold;">[Inactive]</span>
+                {% else %}
+                    <form hx-post="{% url 'corp:hx_fire_agent' %}" hx-target="#agent-list" hx-swap="innerHTML" style="margin: 0; display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="agent_id" value="{{ agent.id }}">
+                        <button type="submit" class="btn btn-danger" style="padding: 2px 8px; font-size: 0.72rem; border-radius: 4px; background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); cursor: pointer;" onclick="return confirm('Fire {{ agent.name }}? Subordinates will be reassigned.');">
+                            🔥 Fire
+                        </button>
+                    </form>
                 {% endif %}
             </div>
 
             {% if agent.subordinates.exists %}
-                {% include "corp/partials/agent_list.html" with agents=agent.subordinates.all %}
+                <div style="padding-left: 16px; border-left: 1px dashed rgba(255,255,255,0.15); margin-top: 6px;">
+                    {% include "corp/partials/agent_list.html" with agents=agent.subordinates.all %}
+                </div>
             {% endif %}
         </li>
     {% empty %}
         {% if not agents %}
-            <li style="color: #999; padding: 5px;">No agents found. Hire someone!</li>
+            <li style="color: #94a3b8; padding: 8px; font-size: 0.9rem;">No agents found. Hire someone below!</li>
         {% endif %}
     {% endfor %}
 </ul>
