@@ -10,8 +10,17 @@ from ai_core.tools.comm_tools import post_to_channel_tool, read_channel_tool, as
 from ai_core.tools.registry import TIER_0_TOOLS, get_authorized_tools
 from ai_core.tools.system_tools import request_tool_access
 from corp.services import agent_service, kms_service, audit_service, safeguard_service
+import re
 import time
 from datetime import datetime
+
+def clean_cot_output(text: str) -> str:
+    """CoT(Chain of Thought) 내부 사고 과정 태그(<think>, <thought>)를 정제하여 최종 결과물만 추출"""
+    if not text or not isinstance(text, str):
+        return str(text or "")
+    cleaned = re.sub(r'<(think|thought)>.*?</\1>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = re.sub(r'</?(think|thought)>', '', cleaned, flags=re.IGNORECASE)
+    return cleaned.strip() or text.strip()
 from django.utils import timezone
 from langgraph.errors import GraphRecursionError
 from langchain_core.tools import tool
@@ -148,7 +157,8 @@ class Command(BaseCommand):
                         continue
 
                     final_state = agent_workflow.invoke(initial_state, config={"recursion_limit": 15})
-                    final_response = final_state["messages"][-1].content
+                    raw_response = final_state["messages"][-1].content
+                    final_response = clean_cot_output(raw_response)
                     
                     task.refresh_from_db()
                     task.result = final_response
