@@ -1,8 +1,8 @@
-<div style="overflow-x: auto;">
-    <div style="display: flex; flex-direction: column; gap: 14px;">
+<div style="max-height: 78vh; overflow-y: auto; padding-right: 6px;">
+    <div style="display: flex; flex-direction: column; gap: 16px;">
         {% for task in tasks %}
-        <details class="agent-sim-card" style="cursor: pointer; padding: 16px; background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1);">
-            <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; font-size: 1.05rem;">
+        <details class="agent-sim-card" style="cursor: pointer; padding: 18px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;">
+            <summary style="display: flex; justify-content: space-between; align-items: center; list-style: none; font-size: 1.05rem; outline: none;">
                 <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
                     <span class="badge-risk 
                         {% if task.status == 'APPROVED' or task.status == 'DONE' %}ok
@@ -10,101 +10,115 @@
                         {% else %}ok{% endif %}">
                         {{ task.get_status_display }}
                     </span>
-                    <strong style="color: #ffffff; font-size: 1rem;">{{ task.title }}</strong>
+                    <strong style="color: #ffffff; font-size: 1.05rem;">{{ task.title }}</strong>
                     {% if task.attempt_count > 0 %}
-                    <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 2px 6px; border-radius: 4px;">
+                    <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.4);">
                         Attempts: {{ task.attempt_count }}
                     </span>
                     {% endif %}
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 20px; font-size: 0.85rem; color: var(--text-muted);">
+                <div style="display: flex; align-items: center; gap: 20px; font-size: 0.88rem; color: var(--text-muted);">
                     <div>
                         {% if task.creator %}🤖 {{ task.creator.name }}{% else %}👤 <strong>CEO</strong>{% endif %}
                         &rarr; 🤖 <strong>{{ task.assignee.name }}</strong>
                     </div>
                     <span>{{ task.created_at|date:"m/d H:i" }}</span>
-                    <span style="color: var(--accent-cyan); font-weight: bold;">🔍 Click to expand details</span>
+                    <span style="color: #00f2fe; font-weight: bold;">🔍 Click to toggle 2-Split View</span>
                 </div>
             </summary>
 
-            <!-- Detailed Task Drawer -->
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); cursor: default;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                    <!-- Left: Description & Feedback -->
-                    <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <h4 style="margin: 0 0 8px 0; color: var(--accent-cyan); font-size: 0.9rem;">📄 Task Description</h4>
-                        <div style="font-size: 0.88rem; color: #cbd5e1; white-space: pre-wrap; line-height: 1.5;">{{ task.description }}</div>
+            <!-- Detailed Task Drawer: Scrollable 2-Split Grid -->
+            <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.12); cursor: default;">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px;">
+                    
+                    <!-- Left Split: Description, Feedback, History & Controls -->
+                    <div style="background: rgba(15, 23, 42, 0.7); padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); max-height: 480px; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <h4 style="margin: 0 0 10px 0; color: #00f2fe; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                📄 Task Description & Requirements
+                            </h4>
+                            <div style="font-size: 0.88rem; color: #e2e8f0; white-space: pre-wrap; line-height: 1.6; background: rgba(0,0,0,0.25); padding: 12px; border-radius: 8px; margin-bottom: 14px;">{{ task.description }}</div>
 
-                        {% if task.feedback %}
-                        <h4 style="margin: 14px 0 8px 0; color: var(--accent-amber); font-size: 0.9rem;">💬 Feedback & Decision Notes</h4>
-                        <div style="font-size: 0.88rem; color: #fde68a; background: rgba(245, 158, 11, 0.1); padding: 10px; border-radius: 6px; border-left: 3px solid #f59e0b; white-space: pre-wrap;">{{ task.feedback }}</div>
-                        {% endif %}
-                    </div>
+                            {% if task.feedback %}
+                            <h4 style="margin: 14px 0 10px 0; color: #f59e0b; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                💬 Manager Feedback & Rejection Notes
+                            </h4>
+                            <div style="font-size: 0.88rem; color: #fde68a; background: rgba(245, 158, 11, 0.12); padding: 12px; border-radius: 8px; border-left: 3px solid #f59e0b; white-space: pre-wrap; margin-bottom: 14px;">{{ task.feedback }}</div>
+                            {% endif %}
 
-                    <!-- Right: Execution Result / Output -->
-                    <div style="background: rgba(15, 23, 42, 0.6); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                        <h4 style="margin: 0 0 8px 0; color: var(--accent-emerald); font-size: 0.9rem;">📝 Execution Result / Proposal Output</h4>
-                        {% if task.result %}
-                        <div style="font-size: 0.85rem; color: #e2e8f0; max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; white-space: pre-wrap; font-family: monospace;">{{ task.result }}</div>
-                        {% else %}
-                        <div style="color: var(--text-muted); font-size: 0.85rem; italic;">No result generated yet. Task is currently in progress.</div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- Execution Logs & Gatekeeper History -->
-                {% if task.logs.all or task.gatekeeper_requests.all %}
-                <div style="background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
-                    <h4 style="margin: 0 0 8px 0; color: var(--accent-blue); font-size: 0.85rem;">⏱️ Attempt & Execution History Logs</h4>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        {% for log in task.logs.all %}
-                        <div style="font-size: 0.8rem; background: rgba(30,41,59,0.5); padding: 8px 12px; border-radius: 6px; border-left: 2px solid var(--accent-blue);">
-                            <div style="display:flex; justify-content:space-between; color: var(--text-muted);">
-                                <span>Attempt Result Log [{{ log.created_at|date:"H:i:s" }}]</span>
-                                <span class="badge-risk high">{{ log.status }}</span>
+                            <!-- History Logs -->
+                            {% if task.logs.all %}
+                            <h4 style="margin: 14px 0 10px 0; color: #4facfe; font-size: 0.95rem;">
+                                ⏱️ Execution & Attempt History Logs
+                            </h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+                                {% for log in task.logs.all %}
+                                <div style="font-size: 0.8rem; background: rgba(30,41,59,0.6); padding: 8px 12px; border-radius: 6px; border-left: 3px solid #4facfe;">
+                                    <div style="display:flex; justify-content:space-between; color: var(--text-muted);">
+                                        <span>Attempt Log [{{ log.created_at|date:"H:i:s" }}]</span>
+                                        <span class="badge-risk high">{{ log.status }}</span>
+                                    </div>
+                                    <div style="color: #cbd5e1; margin-top: 4px; font-family: monospace; font-size: 0.78rem;">{{ log.result|truncatechars:100 }}</div>
+                                    {% if log.feedback %}
+                                    <div style="color: #fca5a5; margin-top: 2px; font-size: 0.78rem;">Feedback: {{ log.feedback }}</div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
                             </div>
-                            <div style="color: #cbd5e1; margin-top: 4px; font-family: monospace;">{{ log.result|truncatechars:120 }}</div>
-                            {% if log.feedback %}
-                            <div style="color: #fca5a5; margin-top: 2px; font-size: 0.78rem;">Feedback: {{ log.feedback }}</div>
                             {% endif %}
                         </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
 
-                <!-- Actions Bar -->
-                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); padding: 10px 14px; border-radius: 8px;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">Task ID: {{ task.id }}</span>
-                    
-                    <div style="display: flex; gap: 8px;">
-                        {% if task.status != 'DONE' %}
-                        <form hx-post="{% url 'corp:hx_monitor_update' %}" hx-target="#monitor-list-container" hx-swap="innerHTML" style="margin:0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_id" value="{{ task.id }}">
-                            <input type="hidden" name="action" value="force_reject">
-                            <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.8em;">🔄 Force Retry</button>
-                        </form>
-                        <form hx-post="{% url 'corp:hx_monitor_update' %}" hx-target="#monitor-list-container" hx-swap="innerHTML" style="margin:0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_id" value="{{ task.id }}">
-                            <input type="hidden" name="action" value="force_done">
-                            <button type="submit" class="btn btn-success" style="padding: 4px 10px; font-size: 0.8em;">✅ Force Complete</button>
-                        </form>
-                        <form hx-post="{% url 'corp:hx_monitor_update' %}" hx-target="#monitor-list-container" hx-swap="innerHTML" style="margin:0;">
-                            {% csrf_token %}
-                            <input type="hidden" name="task_id" value="{{ task.id }}">
-                            <input type="hidden" name="action" value="force_delete">
-                            <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.8em;" onclick="return confirm('Delete task?');">🗑️ Delete</button>
-                        </form>
+                        <!-- Action Bar -->
+                        <div style="background: rgba(0, 0, 0, 0.4); padding: 12px; border-radius: 8px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <span style="font-size: 0.78rem; color: var(--text-muted);">ID: {{ task.id }}</span>
+                            <div style="display: flex; gap: 8px;">
+                                {% if task.status != 'DONE' %}
+                                <form hx-post="{% url 'corp:hx_monitor_update' %}" hx-target="#monitor-list-container" hx-swap="innerHTML" style="margin:0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                                    <input type="hidden" name="action" value="force_reject">
+                                    <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); cursor: pointer; border-radius: 6px;">🔄 Retry</button>
+                                </form>
+                                <form hx-post="{% url 'corp:hx_monitor_update' %}" hx-target="#monitor-list-container" hx-swap="innerHTML" style="margin:0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                                    <input type="hidden" name="action" value="force_done">
+                                    <button type="submit" class="btn btn-success" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); cursor: pointer; border-radius: 6px;">✅ Done</button>
+                                </form>
+                                <form hx-post="{% url 'corp:hx_monitor_update' %}" hx-target="#monitor-list-container" hx-swap="innerHTML" style="margin:0;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="task_id" value="{{ task.id }}">
+                                    <input type="hidden" name="action" value="force_delete">
+                                    <button type="submit" class="btn btn-danger" style="padding: 4px 10px; font-size: 0.8rem; background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); cursor: pointer; border-radius: 6px;" onclick="return confirm('Delete task?');">🗑️ Delete</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Split: Full Execution Result / Proposal Output -->
+                    <div style="background: rgba(15, 23, 42, 0.7); padding: 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); max-height: 480px; overflow-y: auto; display: flex; flex-direction: column;">
+                        <h4 style="margin: 0 0 10px 0; color: #10b981; font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between;">
+                            <span>📝 Execution Result & Output Proposal</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">Scrollable Content</span>
+                        </h4>
+                        {% if task.result %}
+                        <div style="font-size: 0.85rem; color: #e2e8f0; flex: 1; overflow-y: auto; background: rgba(0,0,0,0.35); padding: 14px; border-radius: 8px; white-space: pre-wrap; font-family: 'Inter', monospace; line-height: 1.6; border: 1px solid rgba(255,255,255,0.05);">{{ task.result }}</div>
+                        {% else %}
+                        <div style="color: var(--text-muted); font-size: 0.9rem; font-style: italic; padding: 20px; text-align: center; background: rgba(0,0,0,0.2); border-radius: 8px; flex: 1; display: flex; align-items: center; justify-content: center;">
+                            No execution result generated yet. Task is currently processing in the background pipeline.
+                        </div>
                         {% endif %}
                     </div>
+
                 </div>
+
             </div>
         </details>
         {% empty %}
-        <div style="color: var(--text-muted); text-align: center; padding: 24px; font-size: 0.95rem;">
+        <div style="color: var(--text-muted); text-align: center; padding: 32px; font-size: 0.95rem;">
             No tasks found in organizational pipeline.
         </div>
         {% endfor %}

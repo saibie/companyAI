@@ -30,7 +30,7 @@ class DashboardView(LoginRequiredMixin, View):
             assignee__owner=request.user,
             assignee__manager__isnull=True,
             status=Task.TaskStatus.WAIT_APPROVAL, 
-        ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
+        ).exclude(title__startswith="Help Subordinate").order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
         question_tasks = Task.objects.filter(
             assignee__owner=request.user,
