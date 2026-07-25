@@ -100,6 +100,7 @@ def reject_task(user: User, task_id: str, feedback: str) -> Task:
     
     task.status = Task.TaskStatus.THINKING
     task.feedback = feedback
+    task.attempt_count = 0  # CEO 반려 시 시도 횟수를 0으로 원복
     task.save()
     return task
 
@@ -140,6 +141,7 @@ def force_update_status(user: User, task_id: str, action: str) -> Task:
     elif action == 'force_reject':
         task.status = Task.TaskStatus.THINKING
         task.feedback = "[Admin]: Forced Reset/Reject to retry."
+        task.attempt_count = 0  # Retry 시 시도 횟수를 0으로 원복하여 재시도 기회 제공
         
     task.save()
     return task
