@@ -156,7 +156,8 @@ class Command(BaseCommand):
                         self.stdout.write(self.style.ERROR(f"🚨 {attempt_msg} for '{task.title}'. ESCALATED."))
                         continue
 
-                    final_state = agent_workflow.invoke(initial_state, config={"recursion_limit": 15})
+                    RECURSION_LIMIT = int(os.getenv("LANGGRAPH_RECURSION_LIMIT", 50))
+                    final_state = agent_workflow.invoke(initial_state, config={"recursion_limit": RECURSION_LIMIT})
                     raw_response = final_state["messages"][-1].content
                     final_response = clean_cot_output(raw_response)
                     
