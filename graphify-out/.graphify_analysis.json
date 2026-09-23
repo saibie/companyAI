@@ -1,0 +1,571 @@
+{
+  "communities": {
+    "0": [
+      "ai_core_tools_comm_tools",
+      "ai_core_tools_comm_tools_ask_manager_tool",
+      "ai_core_tools_comm_tools_post_to_channel_tool",
+      "ai_core_tools_comm_tools_py_tool",
+      "ai_core_tools_comm_tools_rationale_18",
+      "ai_core_tools_comm_tools_rationale_27",
+      "ai_core_tools_comm_tools_rationale_39",
+      "ai_core_tools_comm_tools_rationale_6",
+      "ai_core_tools_comm_tools_read_channel_tool",
+      "ai_core_tools_comm_tools_reply_to_subordinate_tool",
+      "ai_core_tools_kms_tools",
+      "ai_core_tools_kms_tools_py_tool",
+      "ai_core_tools_kms_tools_rationale_6",
+      "ai_core_tools_kms_tools_search_wiki_tool",
+      "ai_core_tools_math_tools",
+      "ai_core_tools_math_tools_calculator_tool",
+      "ai_core_tools_math_tools_py_tool",
+      "ai_core_tools_math_tools_rationale_6",
+      "ai_core_tools_org_tools",
+      "ai_core_tools_org_tools_create_plan",
+      "ai_core_tools_org_tools_py_tool",
+      "ai_core_tools_org_tools_rationale_6",
+      "ai_core_tools_registry",
+      "ai_core_tools_registry_get_authorized_tools",
+      "ai_core_tools_registry_rationale_28",
+      "ai_core_tools_system_tools",
+      "ai_core_tools_web_search",
+      "ai_core_tools_web_search_fetch_web_content_tool",
+      "ai_core_tools_web_search_py_tool",
+      "ai_core_tools_web_search_rationale_10",
+      "ai_core_tools_web_search_rationale_25",
+      "ai_core_tools_web_search_search_web",
+      "ai_core_workflow_create_agent_workflow",
+      "bs4",
+      "corp_management_commands_run_agents",
+      "corp_services",
+      "corp_services_agent_service",
+      "corp_services_agent_service_ask_manager",
+      "corp_services_agent_service_rationale_137",
+      "corp_services_agent_service_rationale_155",
+      "corp_services_agent_service_reply_to_subordinate",
+      "datetime",
+      "django_core_management_base",
+      "langchain_community_tools",
+      "langchain_core_tools",
+      "langgraph_errors",
+      "re",
+      "requests",
+      "sympy",
+      "visualize_graph",
+      "visualize_graph_generate_graph_image"
+    ],
+    "1": [
+      "corp_models_task",
+      "corp_models_task_str",
+      "corp_models_tasklog",
+      "corp_models_tasklog_str",
+      "corp_models_taskstatus",
+      "corp_services_cos_service_dispatch_ceo_directive",
+      "corp_services_cos_service_rationale_83",
+      "corp_services_human_service",
+      "corp_services_human_service_approve_task",
+      "corp_services_human_service_create_task",
+      "corp_services_human_service_fire_agent",
+      "corp_services_human_service_force_delete_task",
+      "corp_services_human_service_force_update_status",
+      "corp_services_human_service_hire_agent",
+      "corp_services_human_service_mark_feature_deployed",
+      "corp_services_human_service_rationale_124",
+      "corp_services_human_service_rationale_13",
+      "corp_services_human_service_rationale_40",
+      "corp_services_human_service_rationale_62",
+      "corp_services_human_service_reject_task",
+      "corp_services_human_service_reply_question",
+      "corp_views",
+      "corp_views_htmx_approve_task",
+      "corp_views_htmx_cos_command",
+      "corp_views_htmx_create_agent",
+      "corp_views_htmx_create_task",
+      "corp_views_htmx_deploy_feature",
+      "corp_views_htmx_fire_agent",
+      "corp_views_htmx_gatekeeper_action",
+      "corp_views_htmx_monitor_update",
+      "corp_views_htmx_ollama_pull",
+      "corp_views_htmx_reject_task",
+      "corp_views_htmx_reply_question",
+      "corp_views_rationale_141",
+      "corp_views_rationale_156",
+      "corp_views_rationale_166",
+      "corp_views_rationale_181",
+      "corp_views_rationale_191",
+      "corp_views_rationale_219",
+      "corp_views_rationale_233",
+      "corp_views_rationale_252",
+      "corp_views_rationale_273",
+      "django_contrib_auth_decorators",
+      "django_contrib_auth_mixins",
+      "django_shortcuts",
+      "django_views",
+      "django_views_decorators_http",
+      "login_required",
+      "require_post",
+      "user"
+    ],
+    "2": [
+      "corp_admin",
+      "corp_admin_agentadmin",
+      "corp_admin_agentmemoryadmin",
+      "corp_admin_announcementadmin",
+      "corp_admin_channeladmin",
+      "corp_admin_channelmessageadmin",
+      "corp_admin_corporatememoryadmin",
+      "corp_admin_taskadmin",
+      "corp_admin_tasklogadmin",
+      "corp_memory_manager",
+      "corp_memory_manager_memorymanager",
+      "corp_memory_manager_memorymanager_add_memory",
+      "corp_memory_manager_memorymanager_get_all_memories",
+      "corp_memory_manager_memorymanager_init",
+      "corp_memory_manager_memorymanager_search_memory",
+      "corp_models",
+      "corp_models_agent",
+      "corp_models_agent_create_sub_agent",
+      "corp_models_agent_delete",
+      "corp_models_agent_is_descendant_of",
+      "corp_models_agent_save",
+      "corp_models_agent_str",
+      "corp_models_agentmemory",
+      "corp_models_agentmemory_str",
+      "corp_models_announcement",
+      "corp_models_announcement_str",
+      "corp_models_channel",
+      "corp_models_channel_str",
+      "corp_models_channelmessage",
+      "corp_models_channelmessage_str",
+      "corp_models_memorytype",
+      "corp_models_rationale_70",
+      "corp_services_comm_service",
+      "corp_services_comm_service_get_active_announcement",
+      "corp_services_comm_service_post_message",
+      "corp_services_comm_service_rationale_40",
+      "corp_services_comm_service_read_channel",
+      "django_db_models",
+      "django_db_models_functions",
+      "pgvector_django",
+      "register"
+    ],
+    "3": [
+      "ai_core_llm_gateway",
+      "collections",
+      "corp_models_actiontype",
+      "corp_models_gatekeeperrequest",
+      "corp_models_gatekeeperrequest_str",
+      "corp_models_rationale_239",
+      "corp_models_requeststatus",
+      "corp_services_cos_service",
+      "corp_services_cos_service_generate_executive_briefing",
+      "corp_services_cos_service_get_economic_simulation_metrics",
+      "corp_services_cos_service_rationale_58",
+      "corp_services_cos_service_rationale_9",
+      "corp_services_safeguard_service",
+      "corp_services_safeguard_service_check_task_attempt_limit",
+      "corp_services_safeguard_service_check_tool_loop",
+      "corp_services_safeguard_service_clear_tool_history",
+      "corp_services_safeguard_service_rationale_36",
+      "corp_services_safeguard_service_rationale_65",
+      "django_core_asgi",
+      "django_core_wsgi",
+      "dotenv",
+      "json",
+      "manage",
+      "manage_main",
+      "manage_rationale_2",
+      "manage_rationale_8",
+      "os",
+      "pathlib",
+      "source_asgi",
+      "source_asgi_rationale_1",
+      "source_settings_init",
+      "source_settings_init_rationale_1",
+      "source_wsgi",
+      "source_wsgi_rationale_1",
+      "sys"
+    ],
+    "4": [
+      "account_admin",
+      "account_authentication",
+      "account_authentication_emailorusernamemodelbackend",
+      "account_authentication_emailorusernamemodelbackend_authenticate",
+      "account_authentication_rationale_6",
+      "account_forms",
+      "account_forms_meta",
+      "account_forms_userform",
+      "account_init",
+      "account_urls",
+      "account_views",
+      "account_views_py_httprequest",
+      "account_views_rationale_9",
+      "account_views_signup",
+      "corp_init",
+      "corp_urls",
+      "django",
+      "django_contrib",
+      "django_contrib_auth",
+      "django_contrib_auth_backends",
+      "django_contrib_auth_forms",
+      "django_contrib_auth_models",
+      "django_http",
+      "django_urls",
+      "django_views_generic",
+      "httpresponse",
+      "modelbackend",
+      "source_urls",
+      "source_urls_rationale_1",
+      "usercreationform"
+    ],
+    "5": [
+      "ai_core_tools_system_tools_py_tool",
+      "ai_core_tools_system_tools_rationale_7",
+      "ai_core_tools_system_tools_request_tool_access",
+      "ai_core_workflow",
+      "ai_core_workflow_agentnodes",
+      "ai_core_workflow_agentnodes_agent_reasoning",
+      "ai_core_workflow_agentnodes_init",
+      "ai_core_workflow_agentstate",
+      "ai_core_workflow_create_review_workflow",
+      "ai_core_workflow_manager_review_node",
+      "ai_core_workflow_rationale_26",
+      "ai_core_workflow_reviewstate",
+      "basecommand",
+      "corp_management_commands_run_agents_clean_cot_output",
+      "corp_management_commands_run_agents_command",
+      "corp_management_commands_run_agents_command_handle",
+      "corp_management_commands_run_agents_rationale_18",
+      "django_utils",
+      "langchain_core_messages",
+      "langchain_ollama",
+      "langgraph_graph",
+      "langgraph_prebuilt",
+      "typeddict",
+      "typing"
+    ],
+    "6": [
+      "ai_core_llm_gateway_ollamaclient",
+      "ai_core_llm_gateway_ollamaclient_chat",
+      "ai_core_llm_gateway_ollamaclient_embeddings",
+      "ai_core_llm_gateway_ollamaclient_generate",
+      "ai_core_llm_gateway_ollamaclient_get",
+      "ai_core_llm_gateway_ollamaclient_init",
+      "ai_core_llm_gateway_ollamaclient_list_models",
+      "ai_core_llm_gateway_ollamaclient_post",
+      "ai_core_llm_gateway_ollamaclient_pull_model",
+      "ai_core_llm_gateway_rationale_6",
+      "corp_models_corporatememory",
+      "corp_models_corporatememory_str",
+      "corp_services_kms_service",
+      "corp_services_kms_service_add_knowledge",
+      "corp_services_kms_service_get_embedding",
+      "corp_services_kms_service_get_embedding_attempt_embedding",
+      "corp_services_kms_service_rationale_12",
+      "corp_services_kms_service_rationale_86",
+      "corp_services_kms_service_search_wiki",
+      "time"
+    ],
+    "7": [
+      "account_tests",
+      "corp_models_immutableauditlog",
+      "corp_models_immutableauditlog_str",
+      "corp_models_rationale_220",
+      "corp_services_audit_service",
+      "corp_services_audit_service_audit_agent_action",
+      "corp_services_audit_service_compute_hash",
+      "corp_services_audit_service_rationale_10",
+      "corp_tests",
+      "corp_tests_economicplatformtests",
+      "corp_tests_economicplatformtests_setup",
+      "corp_tests_economicplatformtests_test_circuit_breaker_loop_detection",
+      "corp_tests_economicplatformtests_test_cos_service_briefing_and_metrics",
+      "corp_tests_economicplatformtests_test_immutable_audit_hashing",
+      "corp_tests_economicplatformtests_test_safeguard_hiring_depth_limit",
+      "django_test",
+      "hashlib",
+      "testcase"
+    ],
+    "8": [
+      "corp_views_agentdetailview",
+      "corp_views_agentdetailview_get",
+      "corp_views_agentdetailview_post",
+      "corp_views_dashboardview",
+      "corp_views_dashboardview_get",
+      "corp_views_monitorview",
+      "corp_views_monitorview_get",
+      "corp_views_py_httprequest",
+      "corp_views_rationale_86",
+      "corp_views_rationale_99",
+      "corp_views_wikidetailview",
+      "corp_views_wikidetailview_get",
+      "corp_views_wikilistview",
+      "corp_views_wikilistview_get",
+      "loginrequiredmixin",
+      "view"
+    ],
+    "9": [
+      "corp_management_commands_run_agents_assign_task_tool",
+      "corp_management_commands_run_agents_create_sub_agent_tool",
+      "corp_management_commands_run_agents_fire_sub_agent_tool",
+      "corp_management_commands_run_agents_py_tool",
+      "corp_management_commands_run_agents_rationale_36",
+      "corp_management_commands_run_agents_rationale_50",
+      "corp_management_commands_run_agents_rationale_63",
+      "corp_services_agent_service_assign_task",
+      "corp_services_agent_service_create_sub_agent",
+      "corp_services_agent_service_fire_sub_agent",
+      "corp_services_agent_service_rationale_50",
+      "corp_services_agent_service_rationale_6",
+      "corp_services_agent_service_rationale_98",
+      "corp_services_safeguard_service_check_hiring_allowed",
+      "corp_services_safeguard_service_rationale_16"
+    ],
+    "10": [
+      "account_models",
+      "corp_migrations_0001_setup_vector_extension",
+      "corp_migrations_0001_setup_vector_extension_migration",
+      "corp_migrations_0002_initial",
+      "corp_migrations_0002_initial_migration",
+      "corp_migrations_0003_agent_allowed_tools",
+      "corp_migrations_0003_agent_allowed_tools_migration",
+      "corp_migrations_0004_task_attempt_count_alter_task_status_and_more",
+      "corp_migrations_0004_task_attempt_count_alter_task_status_and_more_migration",
+      "django_conf",
+      "django_db",
+      "django_db_models_deletion",
+      "pgvector_django_vector",
+      "uuid"
+    ],
+    "11": [
+      "account_apps",
+      "account_apps_accountconfig",
+      "account_apps_py_appconfig",
+      "corp_apps",
+      "corp_apps_corpconfig",
+      "corp_apps_py_appconfig",
+      "django_apps"
+    ],
+    "12": [
+      "main",
+      "main_main"
+    ],
+    "13": [
+      "scripts_update_knowledge",
+      "scripts_update_knowledge_sh__entry"
+    ],
+    "14": [
+      "account_migrations_init"
+    ],
+    "15": [
+      "ai_core_init"
+    ],
+    "16": [
+      "ai_core_prompts_init"
+    ],
+    "17": [
+      "ai_core_prompts_system_prompts"
+    ],
+    "18": [
+      "ai_core_prompts_task_prompts"
+    ],
+    "19": [
+      "ai_core_tools_base"
+    ],
+    "20": [
+      "ai_core_tools_code_executor"
+    ],
+    "21": [
+      "ai_core_tools_init"
+    ],
+    "22": [
+      "corp_migrations_init"
+    ],
+    "23": [
+      "corp_services_init"
+    ],
+    "24": [
+      "corp_services_task_service"
+    ],
+    "25": [
+      "pkg_company"
+    ],
+    "26": [
+      "source_init"
+    ]
+  },
+  "cohesion": {
+    "0": 0.07686274509803921,
+    "1": 0.08653061224489796,
+    "2": 0.08414634146341464,
+    "3": 0.06722689075630252,
+    "4": 0.07816091954022988,
+    "5": 0.11231884057971014,
+    "6": 0.14736842105263157,
+    "7": 0.13071895424836602,
+    "8": 0.16666666666666666,
+    "9": 0.13333333333333333,
+    "10": 0.16483516483516483,
+    "11": 0.2857142857142857,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0,
+    "23": 1.0,
+    "24": 1.0,
+    "25": 1.0,
+    "26": 1.0
+  },
+  "gods": [
+    {
+      "id": "corp_models_task",
+      "label": "Task",
+      "degree": 37
+    },
+    {
+      "id": "corp_models_agent",
+      "label": "Agent",
+      "degree": 31
+    },
+    {
+      "id": "ai_core_llm_gateway_ollamaclient",
+      "label": "OllamaClient",
+      "degree": 19
+    },
+    {
+      "id": "corp_models_gatekeeperrequest",
+      "label": "GatekeeperRequest",
+      "degree": 12
+    },
+    {
+      "id": "corp_models_corporatememory",
+      "label": "CorporateMemory",
+      "degree": 9
+    },
+    {
+      "id": "corp_models_immutableauditlog",
+      "label": "ImmutableAuditLog",
+      "degree": 9
+    },
+    {
+      "id": "corp_tests_economicplatformtests",
+      "label": "EconomicPlatformTests",
+      "degree": 9
+    },
+    {
+      "id": "corp_views_agentdetailview",
+      "label": "AgentDetailView",
+      "degree": 9
+    },
+    {
+      "id": "corp_views_dashboardview",
+      "label": "DashboardView",
+      "degree": 9
+    },
+    {
+      "id": "corp_models_tasklog",
+      "label": "TaskLog",
+      "degree": 8
+    }
+  ],
+  "surprises": [
+    {
+      "source": "request_tool_access()",
+      "target": "Task",
+      "source_files": [
+        "ai_core/tools/system_tools.py",
+        "corp/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "request_tool_access()",
+      "target": "Agent",
+      "source_files": [
+        "ai_core/tools/system_tools.py",
+        "corp/models.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "DashboardView",
+      "target": "OllamaClient",
+      "source_files": [
+        "corp/views.py",
+        "ai_core/llm_gateway.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "htmx_ollama_pull()",
+      "target": "OllamaClient",
+      "source_files": [
+        "corp/views.py",
+        "ai_core/llm_gateway.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "Command",
+      "target": "AgentState",
+      "source_files": [
+        "corp/management/commands/run_agents.py",
+        "ai_core/workflow.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `Task` connect `Task` to `run_agents.py`, `Agent`, `cos_service.py`, `workflow.py`, `OllamaClient`, `corp/tests.py`, `AgentDetailView`?",
+      "why": "High betweenness centrality (0.148) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `Agent` connect `Agent` to `run_agents.py`, `Task`, `cos_service.py`, `workflow.py`, `corp/tests.py`, `AgentDetailView`, `create_sub_agent_tool`?",
+      "why": "High betweenness centrality (0.140) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `OllamaClient` connect `OllamaClient` to `run_agents.py`, `Task`, `cos_service.py`, `AgentDetailView`?",
+      "why": "High betweenness centrality (0.064) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 25 inferred relationships involving `Task` (e.g. with `request_tool_access()` and `Command`) actually correct?",
+      "why": "`Task` has 25 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 14 inferred relationships involving `Agent` (e.g. with `request_tool_access()` and `MemoryManager`) actually correct?",
+      "why": "`Agent` has 14 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 3 inferred relationships involving `OllamaClient` (e.g. with `fetch_web_content_tool()` and `DashboardView`) actually correct?",
+      "why": "`OllamaClient` has 3 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 4 inferred relationships involving `GatekeeperRequest` (e.g. with `generate_executive_briefing()` and `get_economic_simulation_metrics()`) actually correct?",
+      "why": "`GatekeeperRequest` has 4 INFERRED edges - model-reasoned connections that need verification."
+    }
+  ]
+}
