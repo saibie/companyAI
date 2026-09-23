@@ -1,0 +1,29 @@
+<div class="form-group" style="margin-bottom: 15px;">
+    <label for="company_name" style="display: block; font-weight: bold; margin-bottom: 5px;">회사명 (Company Name)</label>
+    <input type="text" id="company_name" name="name" class="form-control" value="{{ lore_data.name|default:'' }}" placeholder="예: 넥스트호라이즌 퀀텀랩" required style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+</div>
+
+<div class="form-group" style="margin-bottom: 15px;">
+    <label for="company_industry" style="display: block; font-weight: bold; margin-bottom: 5px;">산업 / 사업 분야 (Industry)</label>
+    <input type="text" id="company_industry" name="industry" class="form-control" value="{{ lore_data.industry|default:'' }}" placeholder="예: 양자 암호화 및 차세대 네트워크 보안" style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box;">
+</div>
+
+<div class="form-group" style="margin-bottom: 15px;">
+    <label for="company_description" style="display: block; font-weight: bold; margin-bottom: 5px;">
+        기업 배경 스토리 & 미션 (Corporate Lore & Mission)
+        <span style="font-size: 0.85em; color: #6366f1; font-weight: normal;">✨ 소속 AI 에이전트들이 사고할 때 프롬프트에 직접 주입됩니다.</span>
+    </label>
+    <textarea id="company_description" name="description" rows="5" class="form-control" placeholder="회사의 설립 배경, 핵심 사명, 비즈니스 가치, AI 에이전트들이 따라야 할 철학을 자유롭게 기술하세요." style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; line-height: 1.5;">{{ lore_data.description|default:'' }}</textarea>
+</div>
+
+<div class="form-group" style="margin-bottom: 20px;">
+    <label for="company_model" style="display: block; font-weight: bold; margin-bottom: 5px;">기본 언어모델 (Default LLM Model)</label>
+    <select id="company_model" name="default_llm_model" class="form-control" style="width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; background: white;">
+        {% for model in available_models %}
+            <option value="{{ model }}" {% if model == "gemma4-ex-llmfan46:26b" %}selected{% endif %}>{{ model }}</option>
+        {% empty %}
+            <option value="gemma4-ex-llmfan46:26b">gemma4-ex-llmfan46:26b (Default)</option>
+        {% endfor %}
+    </select>
+    <small style="color: #666; font-size: 0.85em;">로컬 Ollama에서 설치된 모델 목록입니다. 개별 에이전트에서 다른 모델로 오버라이드할 수 있습니다.</small>
+</div>

@@ -15,9 +15,9 @@ class OllamaClient:
         response.raise_for_status()
         return response.json()
 
-    def _get(self, endpoint):
+    def _get(self, endpoint, timeout=3):
         url = f"{self.host}{endpoint}"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response.json()
 

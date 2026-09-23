@@ -7,8 +7,8 @@ from django.views.decorators.http import require_POST
 from django.http import HttpRequest
 
 # [중요] 사람 및 AI 서비스 임포트
-from corp.services import human_service, cos_service
-from .models import Agent, Task, AgentMemory, CorporateMemory, GatekeeperRequest, ImmutableAuditLog
+from corp.services import human_service, cos_service, company_service
+from .models import Company, Agent, Task, AgentMemory, CorporateMemory, GatekeeperRequest, ImmutableAuditLog
 from ai_core.llm_gateway import OllamaClient
 import requests
 
@@ -17,28 +17,29 @@ import requests
 # ==============================================================================
 class DashboardView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, *args, **kwargs):
-        agents = Agent.objects.filter(owner=request.user, manager__isnull=True).order_by('name')
+        active_company = company_service.get_active_company(request)
+        agents = Agent.objects.filter(company=active_company, manager__isnull=True).order_by('name')
         
-        visible_filter = Q(assignee__owner=request.user) & Q(creator__isnull=True)
+        visible_filter = Q(assignee__company=active_company) & Q(creator__isnull=True)
         
         todo_tasks = Task.objects.filter(
-            assignee__owner=request.user,
+            assignee__company=active_company,
             status=Task.TaskStatus.TODO, 
         ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
         approval_tasks = Task.objects.filter(
-            assignee__owner=request.user,
+            assignee__company=active_company,
             assignee__manager__isnull=True,
             status=Task.TaskStatus.WAIT_APPROVAL, 
         ).exclude(title__startswith="Help Subordinate").order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
         question_tasks = Task.objects.filter(
-            assignee__owner=request.user,
+            assignee__company=active_company,
             status=Task.TaskStatus.WAIT_ANSWER,
         ).order_by('-created_at' if hasattr(Task, 'created_at') else '-id')
         
         roadmap_tasks = Task.objects.filter(
-            assignee__owner=request.user,
+            assignee__company=active_company,
             status=Task.TaskStatus.APPROVED,
             result__startswith="REQUEST_DEV:"
         ).order_by('created_at')
@@ -47,24 +48,24 @@ class DashboardView(LoginRequiredMixin, View):
         ollama_status = "Offline"
         ollama_models = []
         try:
-            ollama_client.list_models()
             ollama_status = "Online"
             ollama_models = ollama_client.list_models().get('models', [])
         except requests.exceptions.RequestException:
             pass
 
-        all_my_agents = Agent.objects.filter(owner=request.user)
+        all_my_agents = Agent.objects.filter(company=active_company)
         
         # Economic Window & CoS AI Data
         cos_briefing = cos_service.generate_executive_briefing(request.user)
         sim_metrics = cos_service.get_economic_simulation_metrics(request.user)
         gatekeeper_requests = GatekeeperRequest.objects.filter(
-            agent__owner=request.user, 
+            agent__company=active_company, 
             status=GatekeeperRequest.RequestStatus.PENDING
         ).select_related('agent', 'task')
-        audit_logs = ImmutableAuditLog.objects.select_related('agent', 'task').order_by('-created_at')[:8]
+        audit_logs = ImmutableAuditLog.objects.filter(agent__company=active_company).select_related('agent', 'task').order_by('-created_at')[:8]
 
         context = {
+            'active_company': active_company,
             'agents': agents,
             'all_my_agents': all_my_agents,
             'todo_tasks': todo_tasks,
@@ -85,12 +86,14 @@ class DashboardView(LoginRequiredMixin, View):
 class MonitorView(LoginRequiredMixin, View):
     """모니터링 화면 조회 (GET Only)"""
     def get(self, request: HttpRequest, *args, **kwargs):
+        active_company = company_service.get_active_company(request)
         all_tasks = Task.objects.filter(
-            assignee__owner=request.user
+            assignee__company=active_company
         ).select_related('creator', 'assignee').prefetch_related('logs', 'audit_logs', 'gatekeeper_requests').order_by('status', '-created_at')
 
         context = {
             'tasks': all_tasks,
+            'active_company': active_company,
         }
         return render(request, 'corp/monitor.html', context)
 
@@ -121,8 +124,9 @@ class AgentDetailView(LoginRequiredMixin, View):
 
 class WikiListView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        memories = CorporateMemory.objects.filter(owner=request.user).order_by('-created_at')
-        return render(request, 'corp/wiki_list.html', {'memories': memories})
+        active_company = company_service.get_active_company(request)
+        memories = CorporateMemory.objects.filter(company=active_company).order_by('-created_at')
+        return render(request, 'corp/wiki_list.html', {'memories': memories, 'active_company': active_company})
 
 
 class WikiDetailView(LoginRequiredMixin, View):
@@ -139,14 +143,17 @@ class WikiDetailView(LoginRequiredMixin, View):
 @require_POST
 def htmx_create_agent(request):
     """에이전트 고용 -> Agent List 갱신"""
+    active_company = company_service.get_active_company(request)
     human_service.hire_agent(
         user=request.user,
         name=request.POST.get('name'),
         role=request.POST.get('role'),
-        manager_id=request.POST.get('manager')
+        manager_id=request.POST.get('manager'),
+        company=active_company,
+        ollama_model_name=request.POST.get('ollama_model_name') or None
     )
     # 갱신된 리스트 반환
-    agents = Agent.objects.filter(owner=request.user, manager__isnull=True).order_by('name')
+    agents = Agent.objects.filter(company=active_company, manager__isnull=True).order_by('name')
     return render(request, 'corp/partials/agent_list.html', {'agents': agents})
 
 
@@ -154,9 +161,10 @@ def htmx_create_agent(request):
 @require_POST
 def htmx_fire_agent(request):
     """에이전트 해고 -> Agent List 갱신"""
+    active_company = company_service.get_active_company(request)
     human_service.fire_agent(request.user, request.POST.get('agent_id'))
     
-    agents = Agent.objects.filter(owner=request.user, manager__isnull=True).order_by('name')
+    agents = Agent.objects.filter(company=active_company, manager__isnull=True).order_by('name')
     return render(request, 'corp/partials/agent_list.html', {'agents': agents})
 
 
@@ -164,14 +172,14 @@ def htmx_fire_agent(request):
 @require_POST
 def htmx_create_task(request):
     """태스크 생성 -> 승인 대기 목록(Task List) 갱신"""
+    active_company = company_service.get_active_company(request)
     human_service.create_task(
         user=request.user,
         title=request.POST.get('title'),
         description=request.POST.get('description'),
         assignee_id=request.POST.get('assignee')
     )
-    # 태스크 생성 직후 '승인 대기' 목록을 보여줌 (UX상 바로 확인 가능하도록)
-    tasks = Task.objects.filter(assignee__owner=request.user, status=Task.TaskStatus.WAIT_APPROVAL)
+    tasks = Task.objects.filter(assignee__company=active_company, status=Task.TaskStatus.WAIT_APPROVAL)
     return render(request, 'corp/partials/task_list.html', {'approval_tasks': tasks})
 
 
@@ -179,9 +187,10 @@ def htmx_create_task(request):
 @require_POST
 def htmx_approve_task(request):
     """태스크 승인 -> 승인 대기 목록 갱신"""
+    active_company = company_service.get_active_company(request)
     human_service.approve_task(request.user, request.POST.get('task_id'))
     
-    tasks = Task.objects.filter(assignee__owner=request.user, status=Task.TaskStatus.WAIT_APPROVAL)
+    tasks = Task.objects.filter(assignee__company=active_company, status=Task.TaskStatus.WAIT_APPROVAL)
     return render(request, 'corp/partials/task_list.html', {'approval_tasks': tasks})
 
 
@@ -189,13 +198,14 @@ def htmx_approve_task(request):
 @require_POST
 def htmx_reject_task(request):
     """태스크 반려 -> 승인 대기 목록 갱신"""
+    active_company = company_service.get_active_company(request)
     human_service.reject_task(
         user=request.user, 
         task_id=request.POST.get('task_id'), 
         feedback=request.POST.get('feedback')
     )
     
-    tasks = Task.objects.filter(assignee__owner=request.user, status=Task.TaskStatus.WAIT_APPROVAL)
+    tasks = Task.objects.filter(assignee__company=active_company, status=Task.TaskStatus.WAIT_APPROVAL)
     return render(request, 'corp/partials/task_list.html', {'approval_tasks': tasks})
 
 
@@ -203,13 +213,14 @@ def htmx_reject_task(request):
 @require_POST
 def htmx_reply_question(request):
     """질문 답변 -> 질문 목록 갱신"""
+    active_company = company_service.get_active_company(request)
     human_service.reply_question(
         user=request.user,
         task_id=request.POST.get('task_id'),
         answer=request.POST.get('answer')
     )
     
-    question_tasks = Task.objects.filter(assignee__owner=request.user, status=Task.TaskStatus.WAIT_ANSWER)
+    question_tasks = Task.objects.filter(assignee__company=active_company, status=Task.TaskStatus.WAIT_ANSWER)
     return render(request, 'corp/partials/question_list.html', {'question_tasks': question_tasks})
 
 
@@ -316,3 +327,95 @@ def htmx_gatekeeper_action(request):
         status=GatekeeperRequest.RequestStatus.PENDING
     ).select_related('agent', 'task')
     return render(request, 'corp/partials/gatekeeper_list.html', {'gatekeeper_requests': gatekeeper_requests})
+
+
+# ==============================================================================
+# 3. Company Multi-tenancy 뷰 (다중 법인 관리 & 전환)
+# ==============================================================================
+
+class CompanyManageView(LoginRequiredMixin, View):
+    """회사 목록 및 관리/신규 설립 페이지"""
+    def get(self, request: HttpRequest, *args, **kwargs):
+        active_company = company_service.get_active_company(request)
+        my_companies = company_service.get_user_companies(request.user)
+        available_models = company_service.get_available_ollama_models()
+        return render(request, 'corp/company_manage.html', {
+            'active_company': active_company,
+            'my_companies': my_companies,
+            'available_models': available_models,
+        })
+
+
+@login_required
+@require_POST
+def switch_company_view(request):
+    """활성 회사를 세션에서 전환합니다."""
+    company_id = request.POST.get('company_id')
+    company_service.set_active_company(request, company_id)
+    referer = request.META.get('HTTP_REFERER')
+    if referer and 'company/manage' not in referer:
+        return redirect(referer)
+    return redirect('corp:dashboard')
+
+
+@login_required
+@require_POST
+def htmx_generate_company_lore(request):
+    """AI를 통해 회사 배경 스토리 및 미션을 자동 생성하여 폼 필드로 반환합니다."""
+    name_or_theme = request.POST.get('theme', '').strip() or request.POST.get('name', '').strip()
+    industry = request.POST.get('industry', '').strip()
+    model_name = request.POST.get('model_name', '').strip()
+    
+    if not name_or_theme:
+        name_or_theme = "차세대 자율 AI 에이전트 서비스"
+
+    lore_data = company_service.generate_company_lore_with_ai(
+        name_or_theme=name_or_theme,
+        industry=industry,
+        model_name=model_name or None
+    )
+    return render(request, 'corp/partials/company_form_fields.html', {
+        'lore_data': lore_data,
+        'available_models': company_service.get_available_ollama_models(),
+    })
+
+
+@login_required
+@require_POST
+def htmx_create_company(request):
+    """새로운 가상 법인을 설립합니다."""
+    name = request.POST.get('name', '').strip()
+    industry = request.POST.get('industry', '').strip()
+    description = request.POST.get('description', '').strip()
+    default_llm_model = request.POST.get('default_llm_model', '').strip()
+
+    if not name:
+        name = f"{request.user.username}의 신규 AI 법인"
+
+    company = company_service.create_company(
+        owner=request.user,
+        name=name,
+        industry=industry,
+        description=description,
+        default_llm_model=default_llm_model
+    )
+    # 설립된 회사를 즉시 활성화
+    company_service.set_active_company(request, str(company.id))
+    return redirect('corp:dashboard')
+
+
+@login_required
+@require_POST
+def htmx_update_company(request):
+    """기존 회사 정보 및 기본 모델을 수정합니다."""
+    company_id = request.POST.get('company_id')
+    company = get_object_or_404(Company, id=company_id, owner=request.user)
+    
+    company_service.update_company(
+        company=company,
+        name=request.POST.get('name', '').strip() or company.name,
+        industry=request.POST.get('industry', '').strip(),
+        description=request.POST.get('description', '').strip(),
+        default_llm_model=request.POST.get('default_llm_model', '').strip() or company.default_llm_model
+    )
+    return redirect('corp:company_manage')

@@ -1,7 +1,14 @@
 from django.contrib import admin
-from .models import Agent, Task, AgentMemory, TaskLog
+from .models import Company, Agent, Task, AgentMemory, TaskLog
 from .models import CorporateMemory
 from .models import Channel, ChannelMessage, Announcement
+
+@admin.register(Company)
+class CompanyAdmin(admin.ModelAdmin):
+    list_display = ('name', 'owner', 'industry', 'default_llm_model', 'is_active', 'created_at')
+    list_filter = ('is_active', 'industry', 'default_llm_model')
+    search_fields = ('name', 'industry', 'description')
+
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):

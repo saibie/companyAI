@@ -5,12 +5,31 @@ from django.db.models import JSONField
 from django.db import transaction
 from pgvector.django import VectorField
 
+class Company(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='companies')
+    name = models.CharField(max_length=255)
+    industry = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True, help_text="회사의 배경 스토리, 미션, 핵심 비즈니스 및 철학")
+    default_llm_model = models.CharField(max_length=255, default="gemma4-ex-llmfan46:26b")
+    config = JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.industry or '일반'})"
+
+
 class Agent(models.Model):
     # [변경] ID를 UUIDv4로 변경 (모든 모델 공통 적용)
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     # [추가] 소유권 명시: 이 에이전트가 어떤 '사용자(CEO)'의 것인지 구분
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agents')
+    
+    # [추가] 소속 가상 법인(Company)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='agents', null=True, blank=True)
     
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=255)
@@ -36,11 +55,12 @@ class Agent(models.Model):
         return f"{self.name} ({self.role})"
     
     def save(self, *args, **kwargs):
-        # 저장 전 Depth 자동 계산
+        # 저장 전 Depth 및 상속 자동 계산
         if self.manager:
             self.depth = self.manager.depth + 1
-            # 하위 에이전트는 상위 에이전트와 같은 owner를 가짐 (무결성 유지)
+            # 하위 에이전트는 상위 에이전트와 같은 owner 및 company를 가짐 (무결성 유지)
             self.owner = self.manager.owner
+            self.company = self.manager.company
         else:
             self.depth = 0
         super().save(*args, **kwargs)
@@ -48,6 +68,7 @@ class Agent(models.Model):
     def create_sub_agent(self, name, role, ollama_model_name=None, context_window_size=None, can_hire=False, can_fire=False):
         return Agent.objects.create(
             owner=self.owner,  # [중요] 생성자의 소유주를 그대로 상속
+            company=self.company,  # 소속 회사 상속
             name=name,
             role=role,
             manager=self,
@@ -175,6 +196,7 @@ class CorporateMemory(models.Model):
     """전사적 지식 저장소"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memories')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='corporate_memories', null=True, blank=True)
     subject = models.CharField(max_length=255)
     content = models.TextField()
     embedding = VectorField(dimensions=768)
@@ -187,12 +209,16 @@ class CorporateMemory(models.Model):
 
 class Channel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50, unique=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='channels', null=True, blank=True)
+    name = models.CharField(max_length=50)
     description = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('company', 'name')
+
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.company.name if self.company else 'Global'})"
 
 
 class ChannelMessage(models.Model):
@@ -208,6 +234,7 @@ class ChannelMessage(models.Model):
 
 class Announcement(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='announcements', null=True, blank=True)
     content = models.TextField()
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

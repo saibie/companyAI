@@ -29,6 +29,7 @@ High-level system design, infrastructure topology, security boundaries, and audi
 ## 💡 Core Domain Concepts
 Core business entities, state machines, and algorithmic patterns.
 
+- [Multi-Company Architecture & Corporate Lore](./concepts/company-entity.md): 1:N multi-company structure, AI lore generation, resource isolation, and hierarchical LLM resolution.
 - [Agent Hierarchy & Lifecycle](./concepts/agent-hierarchy.md): Self-referencing recursive tree, depth management, permissions (`can_hire`, `can_fire`), and fail-safe firing with grandparent adoption.
 - [Task State Machine & Lifecycle](./concepts/task-lifecycle.md): 9-state task lifecycle (`TODO`, `THINKING`, `WAIT_APPROVAL`, `APPROVED`, etc.), delegation, and escalation.
 - [LangGraph Agent Workflow](./concepts/langgraph-workflow.md): StateGraph execution nodes, LLM gateway, tool registry, and memory integration.
@@ -42,6 +43,7 @@ Immutable architectural choices, context, rationale, and consequences.
 
 - [ADR 0001: Local-First Inference with Ollama](./decisions/0001-local-first-ollama.md): Strict zero-cost, privacy-first local LLM execution.
 - [ADR 0002: Django Templates + HTMX over Heavy SPA](./decisions/0002-htmx-reactive-ui.md): Lightweight reactive UI without Node/React build pipeline.
+- [ADR 0003: Multi-Company Tenant Model & AI Lore Injection](./decisions/0003-multi-company-tenant-model.md): Multi-company architecture, lore generation, and model inheritance.
 
 ---
 

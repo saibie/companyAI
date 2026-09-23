@@ -29,6 +29,13 @@ urlpatterns = [
     path('htmx/cos/command/', views.htmx_cos_command, name='hx_cos_command'),
     path('htmx/gatekeeper/action/', views.htmx_gatekeeper_action, name='hx_gatekeeper_action'),
     
+    # [Company Multi-tenancy 관련]
+    path('company/manage/', views.CompanyManageView.as_view(), name='company_manage'),
+    path('company/switch/', views.switch_company_view, name='switch_company'),
+    path('htmx/company/generate-lore/', views.htmx_generate_company_lore, name='hx_generate_company_lore'),
+    path('htmx/company/create/', views.htmx_create_company, name='hx_create_company'),
+    path('htmx/company/update/', views.htmx_update_company, name='hx_update_company'),
+
     # 기존 상세 페이지들
     path('agent/<uuid:pk>/detail/', views.AgentDetailView.as_view(), name='agent_detail'),
     path('wiki/', views.WikiListView.as_view(), name='wiki_list'),

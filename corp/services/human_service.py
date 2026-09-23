@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.models import User
-from corp.models import Agent, Task, TaskLog
+from corp.models import Agent, Task, TaskLog, Company
 from ai_core.tools.registry import TIER_1_REGISTRY
 
 from corp.services import safeguard_service
@@ -9,22 +9,34 @@ from corp.services import safeguard_service
 # [Human CEO Only] 인사 관리 (HR)
 # ==============================================================================
 
-def hire_agent(user: User, name: str, role: str, manager_id: str = None) -> Agent:
+def hire_agent(
+    user: User,
+    name: str,
+    role: str,
+    manager_id: str = None,
+    company: Company = None,
+    ollama_model_name: str = None
+) -> Agent:
     """사람(CEO)이 에이전트를 고용합니다."""
     manager = None
     if manager_id:
         # 내 소유의 에이전트 중에서만 매니저를 고를 수 있음 (보안)
         manager = get_object_or_404(Agent, id=manager_id, owner=user)
+        target_company = manager.company
+    else:
+        target_company = company or Company.objects.filter(owner=user, is_active=True).first()
             
     allowed, reason = safeguard_service.check_hiring_allowed(manager, user)
     if not allowed:
         raise ValueError(f"Hiring rejected by Safeguard Policy: {reason}")
 
     agent = Agent.objects.create(
-        owner=user, 
+        owner=user,
+        company=target_company,
         name=name, 
         role=role, 
         manager=manager, 
+        ollama_model_name=ollama_model_name,
         can_hire=True, 
         can_fire=True
     )

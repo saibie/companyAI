@@ -21,12 +21,14 @@ class ReviewState(TypedDict):
     subordinate_name: str
     decision: str # APPROVE or REJECT
     feedback: str
+    model_name: str # [추가] 동적 심사 모델
 
 def manager_review_node(state: ReviewState):
     """매니저가 부하직원의 결재안을 검토하는 노드"""
     print(f"🧐 Manager {state['manager_name']} is reviewing task from {state['subordinate_name']}...")
     
-    llm = ChatOllama(model=GLOBAL_MODEL_NAME, temperature=0)
+    review_model = state.get("model_name") or GLOBAL_MODEL_NAME
+    llm = ChatOllama(model=review_model, temperature=0)
     
     prompt = f"""당신은 한국 기업의 AI 상급 매니저인 '{state['manager_name']}'입니다.
 당신의 부하 에이전트 '{state['subordinate_name']}'이(가) 다음과 같은 업무 결과 및 기획안을 제출하며 승인을 요청했습니다.
@@ -83,10 +85,14 @@ class AgentState(TypedDict):
     task_id: int
     subordinates: List[dict]
     history_context: str
+    company_name: str
+    company_industry: str
+    company_lore: str
 
 class AgentNodes:
-    def __init__(self, tools):
-        self.llm = ChatOllama(model=GLOBAL_MODEL_NAME, temperature=0)
+    def __init__(self, tools, model_name=None):
+        self.model_name = model_name or GLOBAL_MODEL_NAME
+        self.llm = ChatOllama(model=self.model_name, temperature=0)
         self.llm_with_tools = self.llm.bind_tools(tools)
 
     def agent_reasoning(self, state: AgentState):
@@ -153,13 +159,28 @@ class AgentNodes:
         # 4. 최종 시스템 프롬프트 조립 (100% 한국어 지정)
         broadcast_msg = get_active_announcement()
         
+        # 기업 배경 및 미션 블록 조립
+        company_name = state.get("company_name", "")
+        company_industry = state.get("company_industry", "")
+        company_lore = state.get("company_lore", "")
+        
+        company_context_block = ""
+        if company_name or company_lore:
+            company_context_block = f"""
+        [소속 기업 세계관 및 미션 (Corporate Background)]
+        - 기업명: {company_name or '미지정'}
+        - 산업 분야: {company_industry or '일반'}
+        - 배경 및 미션: {company_lore or '혁신과 가치 창출'}
+        (귀하는 이 기업의 핵심 미션과 비즈니스 철학에 완벽히 부합하도록 모든 업무를 기획하고 수행해야 합니다.)
+        """
+        
         current_time = timezone.localtime()
         current_time_str = current_time.strftime("%Y년 %m월 %d일 %H시 %M분 %S초")
         system_prompt_text = f"""당신은 한국 기업의 능숙한 AI 임원/직원인 '{current_agent_name}'입니다.
         
         [현재 시각]
         {current_time_str}
-        
+        {company_context_block}
         [현재 담당 업무]
         업무 ID: {state['task_id']}
         제목: {state['task_title']}
@@ -198,8 +219,8 @@ class AgentNodes:
 # 3. 워크플로 그래프(Graph) 구성
 # ==============================================================================
 
-def create_agent_workflow(tools):
-    nodes = AgentNodes(tools)
+def create_agent_workflow(tools, model_name=None):
+    nodes = AgentNodes(tools, model_name=model_name)
     workflow = StateGraph(AgentState)
 
     workflow.add_node("agent", nodes.agent_reasoning)
@@ -215,3 +236,4 @@ def create_agent_workflow(tools):
     workflow.add_edge("tools", "agent")
 
     return workflow.compile()
+

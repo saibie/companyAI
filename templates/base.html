@@ -11,15 +11,45 @@
 </head>
 <body>
     <div class="container">
-        <div class="navbar">
-            <span style="font-size: 1.2em; margin-right: auto;">🏢 <strong>AI Corp</strong></span>
-            <a href="{% url 'corp:dashboard' %}" class="nav-link">📊 Dashboard</a>
-            <a href="{% url 'corp:monitor' %}" class="nav-link">🔧 Monitor</a>
-            <a href="{% url 'corp:wiki_list' %}" class="nav-link">📚 Company Wiki</a>
+        <div class="navbar" style="display: flex; align-items: center; gap: 12px; padding: 12px 18px; background: white; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <a href="{% url 'corp:dashboard' %}" style="text-decoration: none; color: inherit; font-size: 1.15em; font-weight: bold; margin-right: 5px;">
+                🏢 AI Corp
+            </a>
+
+            {% if request.user.is_authenticated and active_company %}
+                <!-- Company Switcher Selector -->
+                <form method="POST" action="{% url 'corp:switch_company' %}" style="display: inline-flex; align-items: center; margin: 0 10px 0 0;">
+                    {% csrf_token %}
+                    <span style="font-size: 0.85em; color: #64748b; margin-right: 6px; font-weight: bold;">🏢 활성 법인:</span>
+                    <select name="company_id" onchange="this.form.submit()" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.88em; background-color: #f8fafc; font-weight: bold; color: #1e293b; cursor: pointer;">
+                        {% for comp in my_companies %}
+                            <option value="{{ comp.id }}" {% if comp.id == active_company.id %}selected{% endif %}>
+                                {{ comp.name }} ({{ comp.default_llm_model }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            {% endif %}
+
+            <a href="{% url 'corp:dashboard' %}" class="nav-link" style="color: #475569; text-decoration: none; font-size: 0.9em; padding: 4px 8px;">📊 Dashboard</a>
+            <a href="{% url 'corp:monitor' %}" class="nav-link" style="color: #475569; text-decoration: none; font-size: 0.9em; padding: 4px 8px;">🔧 Monitor</a>
+            <a href="{% url 'corp:wiki_list' %}" class="nav-link" style="color: #475569; text-decoration: none; font-size: 0.9em; padding: 4px 8px;">📚 Wiki</a>
+            
             {% if request.user.is_authenticated %}
-                <span style="color: #666; font-size: 0.9em;">User: {{ request.user.username }}</span>
-                {% else %}
-                <a href="{% url 'account:login' %}" class="nav-link">Login</a>
+                <a href="{% url 'corp:company_manage' %}" class="nav-link" style="color: #4f46e5; text-decoration: none; font-weight: bold; font-size: 0.9em; padding: 4px 8px; margin-left: auto;">
+                    ⚙️ 법인 관리/설립
+                </a>
+                <span style="color: #64748b; font-size: 0.85em; border-left: 1px solid #cbd5e1; padding-left: 10px;">
+                    👤 {{ request.user.username }}
+                </span>
+                <form method="POST" action="{% url 'account:logout' %}" style="display: inline; margin-left: 6px;">
+                    {% csrf_token %}
+                    <button type="submit" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.82em; text-decoration: underline;">
+                        로그아웃
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'account:login' %}" class="nav-link" style="margin-left: auto;">Login</a>
             {% endif %}
         </div>
 

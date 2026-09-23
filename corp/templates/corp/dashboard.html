@@ -139,10 +139,16 @@
                         {% csrf_token %}
                         <input type="text" name="name" placeholder="Agent Name (e.g. 이엔지)" required class="cos-input" style="margin-bottom:8px; width:100%;">
                         <input type="text" name="role" placeholder="Agent Role (e.g. Senior Dev)" required class="cos-input" style="margin-bottom:8px; width:100%;">
-                        <select name="manager" class="cos-input" style="margin-bottom:12px; color:#fff; background:#1e293b; width:100%;">
+                        <select name="manager" class="cos-input" style="margin-bottom:8px; color:#fff; background:#1e293b; width:100%;">
                             <option value="">-- Direct Report to CEO --</option>
                             {% for agent in agents %}
                                 <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.role }})</option>
+                            {% endfor %}
+                        </select>
+                        <select name="ollama_model_name" class="cos-input" style="margin-bottom:12px; color:#fff; background:#1e293b; width:100%;">
+                            <option value="">-- 법인 기본 모델 상속 ({{ active_company.default_llm_model }}) --</option>
+                            {% for model in ollama_models %}
+                                <option value="{{ model.name }}">{{ model.name }}</option>
                             {% endfor %}
                         </select>
                         <button type="submit" class="btn-cos-send" style="width:100%; font-size: 0.9rem; padding: 10px;">➕ Hire Agent Now</button>

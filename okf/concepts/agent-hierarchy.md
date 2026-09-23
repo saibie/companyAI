@@ -23,12 +23,15 @@ The [Agent](file:///home/saibie1677/projects/companyAI/corp/models.py#L8) model 
   - If `manager is None`: Direct report to the Human CEO.
   - If `manager is not None`: Subordinate to another agent.
 - `owner`: ForeignKey to `django.contrib.auth.models.User` (the CEO). All subordinates recursively inherit the creator's `owner`.
+- `company`: ForeignKey to `Company`. All subordinates inherit the creator's `company`.
 - `depth`: Integer automatically calculated in `save()`:
   - Root agents (`manager is None`) have `depth = 0`.
   - Subordinates have `depth = manager.depth + 1`.
 
 ```
            [ Human CEO ] (User)
+                 |
+      [ Company: 가상 법인 ]
                  |
           +------+------+
           |             |
@@ -41,12 +44,12 @@ The [Agent](file:///home/saibie1677/projects/companyAI/corp/models.py#L8) model 
 
 ---
 
-## 2. Authority & Permissions
+## 2. Authority, Permissions & Model Resolution
 - `can_hire` (bool): Whether this agent can spawn subordinate agents via `create_sub_agent()`.
 - `can_fire` (bool): Whether this agent can terminate subordinate agents.
 - `allowed_tools` (JSON list): List of tool keys this agent is authorized to invoke (e.g., `["calculator", "web_search", "kms_search"]`).
 - `config` (JSON dict): Per-agent runtime settings (temperature, system prompt overrides).
-- `ollama_model_name`: Local LLM model tag to use for this agent (e.g., `llama3:8b`, `mistral:7b`).
+- `ollama_model_name`: Local LLM model tag for this agent (e.g., `llama3:8b`, `mistral:7b`). If unset, automatically inherits the `company.default_llm_model`.
 
 ---
 

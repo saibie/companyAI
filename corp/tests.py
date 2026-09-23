@@ -74,3 +74,63 @@ class EconomicPlatformTests(TestCase):
 
         briefing = cos_service.generate_executive_briefing(self.user)
         self.assertIn("Chief of Staff AI Executive Briefing", briefing)
+
+    def test_company_creation_and_subagent_propagation(self):
+        from corp.models import Company, Channel
+        from corp.services import company_service
+
+        company = company_service.create_company(
+            owner=self.user,
+            name="Alpha Robotics",
+            industry="Robotics & AI",
+            description="Leading autonomous robotics company",
+            default_llm_model="gemma4-ex-llmfan46:26b"
+        )
+        self.assertEqual(company.name, "Alpha Robotics")
+        # Check channel auto-creation
+        general_channel = Channel.objects.filter(company=company, name="general").first()
+        self.assertIsNotNone(general_channel)
+
+        # Create root agent with company
+        coo_alpha = Agent.objects.create(
+            owner=self.user,
+            company=company,
+            name="Alpha COO",
+            role="COO",
+            depth=0
+        )
+        self.assertEqual(coo_alpha.company, company)
+
+        # Create sub-agent and verify company is automatically propagated
+        sub_agent = coo_alpha.create_sub_agent("Alpha Dev Lead", "Tech Lead")
+        self.assertEqual(sub_agent.company, company)
+
+    def test_company_session_active_selection(self):
+        from corp.services import company_service
+        from django.test import RequestFactory
+        from django.contrib.sessions.middleware import SessionMiddleware
+
+        factory = RequestFactory()
+        request = factory.get('/')
+        request.user = self.user
+        
+        # Add session support to dummy request
+        middleware = SessionMiddleware(lambda req: None)
+        middleware.process_request(request)
+        request.session.save()
+
+        # Initial call should auto-create or fetch active company
+        active_company = company_service.get_active_company(request)
+        self.assertIsNotNone(active_company)
+        self.assertEqual(request.session.get("active_company_id"), str(active_company.id))
+
+        # Create a second company and switch
+        company2 = company_service.create_company(
+            owner=self.user,
+            name="Beta Dynamics",
+            industry="Aerospace AI"
+        )
+        switched = company_service.set_active_company(request, str(company2.id))
+        self.assertEqual(switched, company2)
+        self.assertEqual(request.session.get("active_company_id"), str(company2.id))
+

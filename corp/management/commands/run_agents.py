@@ -111,12 +111,15 @@ class Command(BaseCommand):
                     if task.assignee.can_fire:
                         current_agent_tools.append(fire_sub_agent_tool)
                     
-                    agent_workflow = create_agent_workflow(current_agent_tools)
+                    agent = task.assignee
+                    company = agent.company
+                    effective_model = agent.ollama_model_name or (company.default_llm_model if company else None)
+                    
+                    agent_workflow = create_agent_workflow(current_agent_tools, model_name=effective_model)
                     
                     prev_result = task.result if task.result else ""
 
                     # 에이전트 정보 조회
-                    agent = task.assignee
                     subordinates = list(agent.subordinates.filter(is_active=True).values('id', 'name', 'role'))
 
                     # 히스토리 컨텍스트 생성
@@ -144,7 +147,10 @@ class Command(BaseCommand):
                         prev_result=prev_result,
                         task_id=task.id,
                         subordinates=subordinates,
-                        history_context=history_context
+                        history_context=history_context,
+                        company_name=company.name if company else "",
+                        company_industry=company.industry if company else "",
+                        company_lore=company.description if company else ""
                     )
 
                     # Safeguard Check: 태스크 시도 횟수 제한 검사
@@ -249,6 +255,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"👮‍♂️ Manager {manager.name} reviewing '{task.title}' from {task.assignee.name}...")
                 
                 try:
+                    manager_model = manager.ollama_model_name or (manager.company.default_llm_model if manager.company else None)
                     review_state = ReviewState(
                         task_title=task.title,
                         task_description=task.description,
@@ -256,7 +263,8 @@ class Command(BaseCommand):
                         manager_name=manager.name,
                         subordinate_name=task.assignee.name,
                         decision="",
-                        feedback=""
+                        feedback="",
+                        model_name=manager_model or ""
                     )
                     
                     final_review = review_workflow.invoke(review_state)
